@@ -1,0 +1,12 @@
+--- protobuf-master/autogen.sh	2015-01-30 03:02:12.000000000 +0800
++++ patch/autogen.sh	2015-02-02 19:55:29.511214425 +0800
+@@ -19,7 +19,8 @@ fi
+ # directory is set up as an SVN external.
+ if test ! -e gtest; then
+   echo "Google Test not present.  Fetching gtest-1.7.0 from the web..."
+-  curl -O https://googletest.googlecode.com/files/gtest-1.7.0.zip
++  #curl -O https://googletest.googlecode.com/files/gtest-1.7.0.zip
++  cp ../gtest-1.7.0.zip .
+   unzip -q gtest-1.7.0.zip
+   rm gtest-1.7.0.zip
+   mv gtest-1.7.0 gtest

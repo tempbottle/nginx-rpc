@@ -1,0 +1,19 @@
+ngx_addon_name=ngx_http_soap_sub_module
+
+HTTP_MODULES="$HTTP_MODULES ngx_http_soap_sub_module"
+
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_http_soap_sub_module.c \
+                                $ngx_addon_dir/ngx_base64_code.cpp \
+                                $ngx_addon_dir/proxy_message_code.cpp \
+                                $ngx_addon_dir/pugixml.cpp \
+                                $ngx_addon_dir/soap_pack_helper.cpp \
+                                $ngx_addon_dir/soap_proxy_hander.cpp \
+                                $ngx_addon_dir/../../proto/youtu_facecheck.pb.cc \
+                                $ngx_addon_dir/../../proto/youtucheck_base.pb.cc"
+
+PROTO_INC="$ngx_addon_dir/../../thirdparty/protobuf/include"
+PROTO_LIB="$ngx_addon_dir/../../thirdparty/protobuf/lib"
+
+CORE_INCS="$CORE_INCS $ngx_addon_dir $PROTO_INC $ngx_addon_dir/../../proto/"
+CORE_LIBS="$CORE_LIBS $PROTO_LIB/libprotobuf.a  -static-libgcc -static-libstdc++ -Wl,--no-undefined -lrt"
+CORE_LINK=" -lrt "
