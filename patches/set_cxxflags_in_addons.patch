@@ -1,0 +1,59 @@
+diff -Narpu master_tengine/auto/cc/gcc mynewtengine/auto/cc/gcc
+--- master_tengine/auto/cc/gcc	2015-02-05 19:45:30.473619755 +0800
++++ mynewtengine/auto/cc/gcc	2015-02-05 19:34:51.697638666 +0800
+@@ -179,3 +179,5 @@ CFLAGS="$CFLAGS -g"
+ if [ ".$CPP" = "." ]; then
+     CPP="$CC -E"
+ fi
++
++CXXFLAGS="${CXXFLAGS}"
+diff -Narpu master_tengine/auto/make mynewtengine/auto/make
+--- master_tengine/auto/make	2015-02-05 19:45:35.065619619 +0800
++++ mynewtengine/auto/make	2015-02-05 19:37:45.501633520 +0800
+@@ -52,7 +52,7 @@ CC =	$CC
+ CFLAGS = $CFLAGS
+ CPP =	$CPP
+ LINK =	$LINK
+-
++CXXFLAGS = $CXXFLAGS
+ END
+ 
+ 
+@@ -408,11 +408,17 @@ if test -n "$NGX_ADDON_SRCS"; then
+                   -e "s#^\(.*\.\)S\\$#$ngx_objs_dir\1$ngx_objext#g"`
+ 
+         ngx_src=`echo $ngx_src | sed -e "s/\//$ngx_regex_dirsep/g"`
++        
++        #if the ngx_src is c++ file, add CXXFLAGS to ngx_cc.
++        flags=""
++        if [ "${ngx_src##*.}"="cc" ] || [ "${ngx_src##*.}"="cpp" ];then 
++            flags=" \$(CXXFLAGS)"
++        fi
+ 
+         cat << END                                            >> $NGX_MAKEFILE
+ 
+ $ngx_obj:	\$(ADDON_DEPS)$ngx_cont$ngx_src
+-	$ngx_cc$ngx_tab$ngx_objout$ngx_obj$ngx_tab$ngx_src$NGX_AUX
++	$ngx_cc$flags$ngx_tab$ngx_objout$ngx_obj$ngx_tab$ngx_src$NGX_AUX
+ 
+ END
+      done
+diff -Narpu master_tengine/auto/options mynewtengine/auto/options
+--- master_tengine/auto/options	2015-02-05 19:45:38.297619523 +0800
++++ mynewtengine/auto/options	2015-02-05 19:37:51.689633337 +0800
+@@ -664,6 +664,7 @@ use the \"--without-http_limit_conn_modu
+         --with-cc=*)                     CC="$value"                ;;
+         --with-cpp=*)                    CPP="$value"               ;;
+         --with-cc-opt=*)                 NGX_CC_OPT="$value"        ;;
++        --with-cxx-opt=*)                CXXFLAGS="$value"          ;;
+         --with-ld-opt=*)                 NGX_LD_OPT="$value"        ;;
+         --with-cpu-opt=*)                CPU="$value"               ;;
+         --with-debug)                    NGX_DEBUG=YES              ;;
+@@ -921,6 +922,7 @@ cat << END
+   --with-cc=PATH                     set C compiler pathname
+   --with-cpp=PATH                    set C preprocessor pathname
+   --with-cc-opt=OPTIONS              set additional C compiler options
++  --with-cxx-opt=OPTIONS             set additional CXX compiler options
+   --with-ld-opt=OPTIONS              set additional linker options
+   --with-cpu-opt=CPU                 build for the specified CPU, valid values:
+                                      pentium, pentiumpro, pentium3, pentium4,

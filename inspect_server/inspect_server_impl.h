@@ -12,13 +12,13 @@
 
 
 
-class ApplicationServiceImpl : public NgxRpcServer<mtrpc::inspect::Application>
+class ApplicationServiceImpl : public NgxRpcServer<ngxrpc::inspect::Application>
 {
 public:
 
     virtual void interface(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request* request,
-                         ::mtrpc::inspect::Response* response,
+                         const ::ngxrpc::inspect::Request* request,
+                         ::ngxrpc::inspect::Response* response,
                          ::google::protobuf::Closure* done);
 
 };

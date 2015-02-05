@@ -16,7 +16,7 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 
-namespace mtrpc {
+namespace ngxrpc {
 namespace inspect {
 
 namespace {
@@ -46,31 +46,31 @@ void protobuf_AssignDesc_inspect_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Request, json_),
   };
   Request_reflection_ =
-    new ::google::protobuf::internal::GeneratedMessageReflection(
+    ::google::protobuf::internal::GeneratedMessageReflection::NewGeneratedMessageReflection(
       Request_descriptor_,
       Request::default_instance_,
       Request_offsets_,
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Request, _has_bits_[0]),
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Request, _unknown_fields_),
       -1,
-      ::google::protobuf::DescriptorPool::generated_pool(),
-      ::google::protobuf::MessageFactory::generated_factory(),
-      sizeof(Request));
+      -1,
+      -1,
+      sizeof(Request),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Request, _internal_metadata_),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Request, _is_default_instance_));
   Response_descriptor_ = file->message_type(1);
   static const int Response_offsets_[1] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Response, json_),
   };
   Response_reflection_ =
-    new ::google::protobuf::internal::GeneratedMessageReflection(
+    ::google::protobuf::internal::GeneratedMessageReflection::NewGeneratedMessageReflection(
       Response_descriptor_,
       Response::default_instance_,
       Response_offsets_,
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Response, _has_bits_[0]),
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Response, _unknown_fields_),
       -1,
-      ::google::protobuf::DescriptorPool::generated_pool(),
-      ::google::protobuf::MessageFactory::generated_factory(),
-      sizeof(Response));
+      -1,
+      -1,
+      sizeof(Response),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Response, _internal_metadata_),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Response, _is_default_instance_));
   Machine_descriptor_ = file->service(0);
   Process_descriptor_ = file->service(1);
   Service_descriptor_ = file->service(2);
@@ -88,9 +88,9 @@ inline void protobuf_AssignDescriptorsOnce() {
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
-    Request_descriptor_, &Request::default_instance());
+      Request_descriptor_, &Request::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
-    Response_descriptor_, &Response::default_instance());
+      Response_descriptor_, &Response::default_instance());
 }
 
 }  // namespace
@@ -109,32 +109,33 @@ void protobuf_AddDesc_inspect_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\rinspect.proto\022\rmtrpc.inspect\"\027\n\007Reques"
-    "t\022\014\n\004json\030\001 \001(\014\"\030\n\010Response\022\014\n\004json\030\001 \001("
-    "\0142\352\001\n\007Machine\0226\n\003cpu\022\026.mtrpc.inspect.Req"
-    "uest\032\027.mtrpc.inspect.Response\0226\n\003mem\022\026.m"
-    "trpc.inspect.Request\032\027.mtrpc.inspect.Res"
-    "ponse\0226\n\003net\022\026.mtrpc.inspect.Request\032\027.m"
-    "trpc.inspect.Response\0227\n\004disk\022\026.mtrpc.in"
-    "spect.Request\032\027.mtrpc.inspect.Response2\241"
-    "\002\n\007Process\0226\n\003cpu\022\026.mtrpc.inspect.Reques"
-    "t\032\027.mtrpc.inspect.Response\0226\n\003mem\022\026.mtrp"
-    "c.inspect.Request\032\027.mtrpc.inspect.Respon"
-    "se\0226\n\003net\022\026.mtrpc.inspect.Request\032\027.mtrp"
-    "c.inspect.Response\0227\n\004disk\022\026.mtrpc.inspe"
-    "ct.Request\032\027.mtrpc.inspect.Response\0225\n\002f"
-    "d\022\026.mtrpc.inspect.Request\032\027.mtrpc.inspec"
-    "t.Response2\370\001\n\007Service\022:\n\007version\022\026.mtrp"
-    "c.inspect.Request\032\027.mtrpc.inspect.Respon"
-    "se\0226\n\003api\022\026.mtrpc.inspect.Request\032\027.mtrp"
-    "c.inspect.Response\0229\n\006accept\022\026.mtrpc.ins"
-    "pect.Request\032\027.mtrpc.inspect.Response\022>\n"
-    "\013connections\022\026.mtrpc.inspect.Request\032\027.m"
-    "trpc.inspect.Response2\215\001\n\013Application\022<\n"
-    "\tinterface\022\026.mtrpc.inspect.Request\032\027.mtr"
-    "pc.inspect.Response\022@\n\rrequeststatus\022\026.m"
-    "trpc.inspect.Request\032\027.mtrpc.inspect.Res"
-    "ponseB\003\200\001\001", 1010);
+    "\n\rinspect.proto\022\016ngxrpc.inspect\"\027\n\007Reque"
+    "st\022\014\n\004json\030\001 \001(\014\"\030\n\010Response\022\014\n\004json\030\001 \001"
+    "(\0142\362\001\n\007Machine\0228\n\003cpu\022\027.ngxrpc.inspect.R"
+    "equest\032\030.ngxrpc.inspect.Response\0228\n\003mem\022"
+    "\027.ngxrpc.inspect.Request\032\030.ngxrpc.inspec"
+    "t.Response\0228\n\003net\022\027.ngxrpc.inspect.Reque"
+    "st\032\030.ngxrpc.inspect.Response\0229\n\004disk\022\027.n"
+    "gxrpc.inspect.Request\032\030.ngxrpc.inspect.R"
+    "esponse2\253\002\n\007Process\0228\n\003cpu\022\027.ngxrpc.insp"
+    "ect.Request\032\030.ngxrpc.inspect.Response\0228\n"
+    "\003mem\022\027.ngxrpc.inspect.Request\032\030.ngxrpc.i"
+    "nspect.Response\0228\n\003net\022\027.ngxrpc.inspect."
+    "Request\032\030.ngxrpc.inspect.Response\0229\n\004dis"
+    "k\022\027.ngxrpc.inspect.Request\032\030.ngxrpc.insp"
+    "ect.Response\0227\n\002fd\022\027.ngxrpc.inspect.Requ"
+    "est\032\030.ngxrpc.inspect.Response2\200\002\n\007Servic"
+    "e\022<\n\007version\022\027.ngxrpc.inspect.Request\032\030."
+    "ngxrpc.inspect.Response\0228\n\003api\022\027.ngxrpc."
+    "inspect.Request\032\030.ngxrpc.inspect.Respons"
+    "e\022;\n\006accept\022\027.ngxrpc.inspect.Request\032\030.n"
+    "gxrpc.inspect.Response\022@\n\013connections\022\027."
+    "ngxrpc.inspect.Request\032\030.ngxrpc.inspect."
+    "Response2\221\001\n\013Application\022>\n\tinterface\022\027."
+    "ngxrpc.inspect.Request\032\030.ngxrpc.inspect."
+    "Response\022B\n\rrequeststatus\022\027.ngxrpc.inspe"
+    "ct.Request\032\030.ngxrpc.inspect.ResponseB\006\200\001"
+    "\001\370\001\001b\006proto3", 1052);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "inspect.proto", &protobuf_RegisterTypes);
   Request::default_instance_ = new Request();
@@ -151,6 +152,16 @@ struct StaticDescriptorInitializer_inspect_2eproto {
   }
 } static_descriptor_initializer_inspect_2eproto_;
 
+namespace {
+
+static void MergeFromFail(int line) GOOGLE_ATTRIBUTE_COLD;
+static void MergeFromFail(int line) {
+  GOOGLE_CHECK(false) << __FILE__ << ":" << line;
+}
+
+}  // namespace
+
+
 // ===================================================================
 
 #ifndef _MSC_VER
@@ -158,37 +169,59 @@ const int Request::kJsonFieldNumber;
 #endif  // !_MSC_VER
 
 Request::Request()
-  : ::google::protobuf::Message() {
+  : ::google::protobuf::Message() , _internal_metadata_(NULL)  {
   SharedCtor();
+  // @@protoc_insertion_point(constructor:ngxrpc.inspect.Request)
+}
+
+Request::Request(::google::protobuf::Arena* arena)
+  : ::google::protobuf::Message(),
+  _internal_metadata_(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:ngxrpc.inspect.Request)
 }
 
 void Request::InitAsDefaultInstance() {
+  _is_default_instance_ = true;
 }
 
 Request::Request(const Request& from)
-  : ::google::protobuf::Message() {
+  : ::google::protobuf::Message(),
+    _internal_metadata_(NULL) {
   SharedCtor();
   MergeFrom(from);
+  // @@protoc_insertion_point(copy_constructor:ngxrpc.inspect.Request)
 }
 
 void Request::SharedCtor() {
+    _is_default_instance_ = false;
+  ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
-  json_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  json_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 Request::~Request() {
+  // @@protoc_insertion_point(destructor:ngxrpc.inspect.Request)
   SharedDtor();
 }
 
 void Request::SharedDtor() {
-  if (json_ != &::google::protobuf::internal::kEmptyString) {
-    delete json_;
+  if (GetArenaNoVirtual() != NULL) {
+    return;
   }
+
+  json_.Destroy(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
   if (this != default_instance_) {
   }
 }
 
+void Request::ArenaDtor(void* object) {
+  Request* _this = reinterpret_cast< Request* >(object);
+  (void)_this;
+}
+void Request::RegisterArenaDtor(::google::protobuf::Arena* arena) {
+}
 void Request::SetCachedSize(int size) const {
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = size;
@@ -206,104 +239,93 @@ const Request& Request::default_instance() {
 
 Request* Request::default_instance_ = NULL;
 
-Request* Request::New() const {
-  return new Request;
+Request* Request::New(::google::protobuf::Arena* arena) const {
+  return ::google::protobuf::Arena::CreateMessage<Request>(arena);
 }
 
 void Request::Clear() {
-  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (has_json()) {
-      if (json_ != &::google::protobuf::internal::kEmptyString) {
-        json_->clear();
-      }
-    }
-  }
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  mutable_unknown_fields()->Clear();
+  json_.ClearToEmpty(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
 }
 
 bool Request::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  while ((tag = input->ReadTag()) != 0) {
+  // @@protoc_insertion_point(parse_start:ngxrpc.inspect.Request)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
       // optional bytes json = 1;
       case 1: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+        if (tag == 10) {
           DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
                 input, this->mutable_json()));
         } else {
-          goto handle_uninterpreted;
+          goto handle_unusual;
         }
-        if (input->ExpectAtEnd()) return true;
+        if (input->ExpectAtEnd()) goto success;
         break;
       }
 
       default: {
-      handle_uninterpreted:
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+      handle_unusual:
+        if (tag == 0 ||
+            ::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
-          return true;
+          goto success;
         }
-        DO_(::google::protobuf::internal::WireFormat::SkipField(
-              input, tag, mutable_unknown_fields()));
+        DO_(::google::protobuf::internal::WireFormatLite::SkipField(input, tag));
         break;
       }
     }
   }
+success:
+  // @@protoc_insertion_point(parse_success:ngxrpc.inspect.Request)
   return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:ngxrpc.inspect.Request)
+  return false;
 #undef DO_
 }
 
 void Request::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:ngxrpc.inspect.Request)
   // optional bytes json = 1;
-  if (has_json()) {
-    ::google::protobuf::internal::WireFormatLite::WriteBytes(
+  if (this->json().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
       1, this->json(), output);
   }
 
-  if (!unknown_fields().empty()) {
-    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
-        unknown_fields(), output);
-  }
+  // @@protoc_insertion_point(serialize_end:ngxrpc.inspect.Request)
 }
 
 ::google::protobuf::uint8* Request::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
+  // @@protoc_insertion_point(serialize_to_array_start:ngxrpc.inspect.Request)
   // optional bytes json = 1;
-  if (has_json()) {
+  if (this->json().size() > 0) {
     target =
       ::google::protobuf::internal::WireFormatLite::WriteBytesToArray(
         1, this->json(), target);
   }
 
-  if (!unknown_fields().empty()) {
-    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
-        unknown_fields(), target);
-  }
+  // @@protoc_insertion_point(serialize_to_array_end:ngxrpc.inspect.Request)
   return target;
 }
 
 int Request::ByteSize() const {
   int total_size = 0;
 
-  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // optional bytes json = 1;
-    if (has_json()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::BytesSize(
-          this->json());
-    }
+  // optional bytes json = 1;
+  if (this->json().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::BytesSize(
+        this->json());
+  }
 
-  }
-  if (!unknown_fields().empty()) {
-    total_size +=
-      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
-        unknown_fields());
-  }
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = total_size;
   GOOGLE_SAFE_CONCURRENT_WRITES_END();
@@ -311,7 +333,7 @@ int Request::ByteSize() const {
 }
 
 void Request::MergeFrom(const ::google::protobuf::Message& from) {
-  GOOGLE_CHECK_NE(&from, this);
+  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
   const Request* source =
     ::google::protobuf::internal::dynamic_cast_if_available<const Request*>(
       &from);
@@ -323,13 +345,10 @@ void Request::MergeFrom(const ::google::protobuf::Message& from) {
 }
 
 void Request::MergeFrom(const Request& from) {
-  GOOGLE_CHECK_NE(&from, this);
-  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (from.has_json()) {
-      set_json(from.json());
-    }
+  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+  if (from.json().size() > 0) {
+    set_json(from.json());
   }
-  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
 
 void Request::CopyFrom(const ::google::protobuf::Message& from) {
@@ -350,12 +369,25 @@ bool Request::IsInitialized() const {
 }
 
 void Request::Swap(Request* other) {
-  if (other != this) {
-    std::swap(json_, other->json_);
-    std::swap(_has_bits_[0], other->_has_bits_[0]);
-    _unknown_fields_.Swap(&other->_unknown_fields_);
-    std::swap(_cached_size_, other->_cached_size_);
+  if (other == this) return;
+  if (GetArenaNoVirtual() == other->GetArenaNoVirtual()) {
+    InternalSwap(other);
+  } else {
+    Request temp;
+    temp.MergeFrom(*this);
+    CopyFrom(*other);
+    other->CopyFrom(temp);
   }
+}
+void Request::UnsafeArenaSwap(Request* other) {
+  if (other == this) return;
+  GOOGLE_DCHECK(GetArenaNoVirtual() == other->GetArenaNoVirtual());
+  InternalSwap(other);
+}
+void Request::InternalSwap(Request* other) {
+  json_.Swap(&other->json_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  std::swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata Request::GetMetadata() const {
@@ -374,37 +406,59 @@ const int Response::kJsonFieldNumber;
 #endif  // !_MSC_VER
 
 Response::Response()
-  : ::google::protobuf::Message() {
+  : ::google::protobuf::Message() , _internal_metadata_(NULL)  {
   SharedCtor();
+  // @@protoc_insertion_point(constructor:ngxrpc.inspect.Response)
+}
+
+Response::Response(::google::protobuf::Arena* arena)
+  : ::google::protobuf::Message(),
+  _internal_metadata_(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:ngxrpc.inspect.Response)
 }
 
 void Response::InitAsDefaultInstance() {
+  _is_default_instance_ = true;
 }
 
 Response::Response(const Response& from)
-  : ::google::protobuf::Message() {
+  : ::google::protobuf::Message(),
+    _internal_metadata_(NULL) {
   SharedCtor();
   MergeFrom(from);
+  // @@protoc_insertion_point(copy_constructor:ngxrpc.inspect.Response)
 }
 
 void Response::SharedCtor() {
+    _is_default_instance_ = false;
+  ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
-  json_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  json_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 Response::~Response() {
+  // @@protoc_insertion_point(destructor:ngxrpc.inspect.Response)
   SharedDtor();
 }
 
 void Response::SharedDtor() {
-  if (json_ != &::google::protobuf::internal::kEmptyString) {
-    delete json_;
+  if (GetArenaNoVirtual() != NULL) {
+    return;
   }
+
+  json_.Destroy(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
   if (this != default_instance_) {
   }
 }
 
+void Response::ArenaDtor(void* object) {
+  Response* _this = reinterpret_cast< Response* >(object);
+  (void)_this;
+}
+void Response::RegisterArenaDtor(::google::protobuf::Arena* arena) {
+}
 void Response::SetCachedSize(int size) const {
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = size;
@@ -422,104 +476,93 @@ const Response& Response::default_instance() {
 
 Response* Response::default_instance_ = NULL;
 
-Response* Response::New() const {
-  return new Response;
+Response* Response::New(::google::protobuf::Arena* arena) const {
+  return ::google::protobuf::Arena::CreateMessage<Response>(arena);
 }
 
 void Response::Clear() {
-  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (has_json()) {
-      if (json_ != &::google::protobuf::internal::kEmptyString) {
-        json_->clear();
-      }
-    }
-  }
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  mutable_unknown_fields()->Clear();
+  json_.ClearToEmpty(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
 }
 
 bool Response::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  while ((tag = input->ReadTag()) != 0) {
+  // @@protoc_insertion_point(parse_start:ngxrpc.inspect.Response)
+  for (;;) {
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
+    tag = p.first;
+    if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
       // optional bytes json = 1;
       case 1: {
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
-            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+        if (tag == 10) {
           DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
                 input, this->mutable_json()));
         } else {
-          goto handle_uninterpreted;
+          goto handle_unusual;
         }
-        if (input->ExpectAtEnd()) return true;
+        if (input->ExpectAtEnd()) goto success;
         break;
       }
 
       default: {
-      handle_uninterpreted:
-        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+      handle_unusual:
+        if (tag == 0 ||
+            ::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
-          return true;
+          goto success;
         }
-        DO_(::google::protobuf::internal::WireFormat::SkipField(
-              input, tag, mutable_unknown_fields()));
+        DO_(::google::protobuf::internal::WireFormatLite::SkipField(input, tag));
         break;
       }
     }
   }
+success:
+  // @@protoc_insertion_point(parse_success:ngxrpc.inspect.Response)
   return true;
+failure:
+  // @@protoc_insertion_point(parse_failure:ngxrpc.inspect.Response)
+  return false;
 #undef DO_
 }
 
 void Response::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
+  // @@protoc_insertion_point(serialize_start:ngxrpc.inspect.Response)
   // optional bytes json = 1;
-  if (has_json()) {
-    ::google::protobuf::internal::WireFormatLite::WriteBytes(
+  if (this->json().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
       1, this->json(), output);
   }
 
-  if (!unknown_fields().empty()) {
-    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
-        unknown_fields(), output);
-  }
+  // @@protoc_insertion_point(serialize_end:ngxrpc.inspect.Response)
 }
 
 ::google::protobuf::uint8* Response::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
+  // @@protoc_insertion_point(serialize_to_array_start:ngxrpc.inspect.Response)
   // optional bytes json = 1;
-  if (has_json()) {
+  if (this->json().size() > 0) {
     target =
       ::google::protobuf::internal::WireFormatLite::WriteBytesToArray(
         1, this->json(), target);
   }
 
-  if (!unknown_fields().empty()) {
-    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
-        unknown_fields(), target);
-  }
+  // @@protoc_insertion_point(serialize_to_array_end:ngxrpc.inspect.Response)
   return target;
 }
 
 int Response::ByteSize() const {
   int total_size = 0;
 
-  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // optional bytes json = 1;
-    if (has_json()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::BytesSize(
-          this->json());
-    }
+  // optional bytes json = 1;
+  if (this->json().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::BytesSize(
+        this->json());
+  }
 
-  }
-  if (!unknown_fields().empty()) {
-    total_size +=
-      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
-        unknown_fields());
-  }
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = total_size;
   GOOGLE_SAFE_CONCURRENT_WRITES_END();
@@ -527,7 +570,7 @@ int Response::ByteSize() const {
 }
 
 void Response::MergeFrom(const ::google::protobuf::Message& from) {
-  GOOGLE_CHECK_NE(&from, this);
+  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
   const Response* source =
     ::google::protobuf::internal::dynamic_cast_if_available<const Response*>(
       &from);
@@ -539,13 +582,10 @@ void Response::MergeFrom(const ::google::protobuf::Message& from) {
 }
 
 void Response::MergeFrom(const Response& from) {
-  GOOGLE_CHECK_NE(&from, this);
-  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (from.has_json()) {
-      set_json(from.json());
-    }
+  if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
+  if (from.json().size() > 0) {
+    set_json(from.json());
   }
-  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
 
 void Response::CopyFrom(const ::google::protobuf::Message& from) {
@@ -566,12 +606,25 @@ bool Response::IsInitialized() const {
 }
 
 void Response::Swap(Response* other) {
-  if (other != this) {
-    std::swap(json_, other->json_);
-    std::swap(_has_bits_[0], other->_has_bits_[0]);
-    _unknown_fields_.Swap(&other->_unknown_fields_);
-    std::swap(_cached_size_, other->_cached_size_);
+  if (other == this) return;
+  if (GetArenaNoVirtual() == other->GetArenaNoVirtual()) {
+    InternalSwap(other);
+  } else {
+    Response temp;
+    temp.MergeFrom(*this);
+    CopyFrom(*other);
+    other->CopyFrom(temp);
   }
+}
+void Response::UnsafeArenaSwap(Response* other) {
+  if (other == this) return;
+  GOOGLE_DCHECK(GetArenaNoVirtual() == other->GetArenaNoVirtual());
+  InternalSwap(other);
+}
+void Response::InternalSwap(Response* other) {
+  json_.Swap(&other->json_);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  std::swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata Response::GetMetadata() const {
@@ -598,32 +651,32 @@ const ::google::protobuf::ServiceDescriptor* Machine::GetDescriptor() {
 }
 
 void Machine::cpu(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method cpu() not implemented.");
   done->Run();
 }
 
 void Machine::mem(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method mem() not implemented.");
   done->Run();
 }
 
 void Machine::net(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method net() not implemented.");
   done->Run();
 }
 
 void Machine::disk(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method disk() not implemented.");
   done->Run();
@@ -638,26 +691,26 @@ void Machine::CallMethod(const ::google::protobuf::MethodDescriptor* method,
   switch(method->index()) {
     case 0:
       cpu(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 1:
       mem(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 2:
       net(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 3:
       disk(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     default:
@@ -671,16 +724,16 @@ const ::google::protobuf::Message& Machine::GetRequestPrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 1:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 2:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 3:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *static_cast< ::google::protobuf::Message*>(NULL);
   }
 }
 
@@ -689,16 +742,16 @@ const ::google::protobuf::Message& Machine::GetResponsePrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 1:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 2:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 3:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *static_cast< ::google::protobuf::Message*>(NULL);
   }
 }
 
@@ -714,29 +767,29 @@ Machine_Stub::~Machine_Stub() {
 }
 
 void Machine_Stub::cpu(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(0),
                        controller, request, response, done);
 }
 void Machine_Stub::mem(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(1),
                        controller, request, response, done);
 }
 void Machine_Stub::net(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(2),
                        controller, request, response, done);
 }
 void Machine_Stub::disk(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(3),
                        controller, request, response, done);
@@ -756,40 +809,40 @@ const ::google::protobuf::ServiceDescriptor* Process::GetDescriptor() {
 }
 
 void Process::cpu(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method cpu() not implemented.");
   done->Run();
 }
 
 void Process::mem(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method mem() not implemented.");
   done->Run();
 }
 
 void Process::net(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method net() not implemented.");
   done->Run();
 }
 
 void Process::disk(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method disk() not implemented.");
   done->Run();
 }
 
 void Process::fd(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method fd() not implemented.");
   done->Run();
@@ -804,32 +857,32 @@ void Process::CallMethod(const ::google::protobuf::MethodDescriptor* method,
   switch(method->index()) {
     case 0:
       cpu(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 1:
       mem(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 2:
       net(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 3:
       disk(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 4:
       fd(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     default:
@@ -843,18 +896,18 @@ const ::google::protobuf::Message& Process::GetRequestPrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 1:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 2:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 3:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 4:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *static_cast< ::google::protobuf::Message*>(NULL);
   }
 }
 
@@ -863,18 +916,18 @@ const ::google::protobuf::Message& Process::GetResponsePrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 1:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 2:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 3:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 4:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *static_cast< ::google::protobuf::Message*>(NULL);
   }
 }
 
@@ -890,36 +943,36 @@ Process_Stub::~Process_Stub() {
 }
 
 void Process_Stub::cpu(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(0),
                        controller, request, response, done);
 }
 void Process_Stub::mem(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(1),
                        controller, request, response, done);
 }
 void Process_Stub::net(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(2),
                        controller, request, response, done);
 }
 void Process_Stub::disk(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(3),
                        controller, request, response, done);
 }
 void Process_Stub::fd(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(4),
                        controller, request, response, done);
@@ -939,32 +992,32 @@ const ::google::protobuf::ServiceDescriptor* Service::GetDescriptor() {
 }
 
 void Service::version(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method version() not implemented.");
   done->Run();
 }
 
 void Service::api(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method api() not implemented.");
   done->Run();
 }
 
 void Service::accept(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method accept() not implemented.");
   done->Run();
 }
 
 void Service::connections(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method connections() not implemented.");
   done->Run();
@@ -979,26 +1032,26 @@ void Service::CallMethod(const ::google::protobuf::MethodDescriptor* method,
   switch(method->index()) {
     case 0:
       version(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 1:
       api(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 2:
       accept(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 3:
       connections(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     default:
@@ -1012,16 +1065,16 @@ const ::google::protobuf::Message& Service::GetRequestPrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 1:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 2:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 3:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *static_cast< ::google::protobuf::Message*>(NULL);
   }
 }
 
@@ -1030,16 +1083,16 @@ const ::google::protobuf::Message& Service::GetResponsePrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 1:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 2:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 3:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *static_cast< ::google::protobuf::Message*>(NULL);
   }
 }
 
@@ -1055,29 +1108,29 @@ Service_Stub::~Service_Stub() {
 }
 
 void Service_Stub::version(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(0),
                        controller, request, response, done);
 }
 void Service_Stub::api(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(1),
                        controller, request, response, done);
 }
 void Service_Stub::accept(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(2),
                        controller, request, response, done);
 }
 void Service_Stub::connections(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(3),
                        controller, request, response, done);
@@ -1097,16 +1150,16 @@ const ::google::protobuf::ServiceDescriptor* Application::GetDescriptor() {
 }
 
 void Application::interface(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method interface() not implemented.");
   done->Run();
 }
 
 void Application::requeststatus(::google::protobuf::RpcController* controller,
-                         const ::mtrpc::inspect::Request*,
-                         ::mtrpc::inspect::Response*,
+                         const ::ngxrpc::inspect::Request*,
+                         ::ngxrpc::inspect::Response*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method requeststatus() not implemented.");
   done->Run();
@@ -1121,14 +1174,14 @@ void Application::CallMethod(const ::google::protobuf::MethodDescriptor* method,
   switch(method->index()) {
     case 0:
       interface(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     case 1:
       requeststatus(controller,
-             ::google::protobuf::down_cast<const ::mtrpc::inspect::Request*>(request),
-             ::google::protobuf::down_cast< ::mtrpc::inspect::Response*>(response),
+             ::google::protobuf::down_cast<const ::ngxrpc::inspect::Request*>(request),
+             ::google::protobuf::down_cast< ::ngxrpc::inspect::Response*>(response),
              done);
       break;
     default:
@@ -1142,12 +1195,12 @@ const ::google::protobuf::Message& Application::GetRequestPrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     case 1:
-      return ::mtrpc::inspect::Request::default_instance();
+      return ::ngxrpc::inspect::Request::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *static_cast< ::google::protobuf::Message*>(NULL);
   }
 }
 
@@ -1156,12 +1209,12 @@ const ::google::protobuf::Message& Application::GetResponsePrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     case 1:
-      return ::mtrpc::inspect::Response::default_instance();
+      return ::ngxrpc::inspect::Response::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *static_cast< ::google::protobuf::Message*>(NULL);
   }
 }
 
@@ -1177,15 +1230,15 @@ Application_Stub::~Application_Stub() {
 }
 
 void Application_Stub::interface(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(0),
                        controller, request, response, done);
 }
 void Application_Stub::requeststatus(::google::protobuf::RpcController* controller,
-                              const ::mtrpc::inspect::Request* request,
-                              ::mtrpc::inspect::Response* response,
+                              const ::ngxrpc::inspect::Request* request,
+                              ::ngxrpc::inspect::Response* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(1),
                        controller, request, response, done);
@@ -1194,6 +1247,6 @@ void Application_Stub::requeststatus(::google::protobuf::RpcController* controll
 // @@protoc_insertion_point(namespace_scope)
 
 }  // namespace inspect
-}  // namespace mtrpc
+}  // namespace ngxrpc
 
 // @@protoc_insertion_point(global_scope)

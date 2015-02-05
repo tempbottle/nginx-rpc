@@ -4,13 +4,11 @@
 
 void ApplicationServiceImpl::interface(
         google::protobuf::RpcController *controller,
-        const mtrpc::inspect::Request *request,
-        mtrpc::inspect::Response *response,
+        const ngxrpc::inspect::Request *request,
+        ngxrpc::inspect::Response *response,
         google::protobuf::Closure *done){
 
-ReadonlyClass * read = GetReadonlyClass();
-
-TlsClass* tls = GetTls();
+   GetReadonly();
 
     // do some thing
     //must do

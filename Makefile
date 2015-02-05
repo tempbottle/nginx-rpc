@@ -8,28 +8,30 @@ NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
 
 
 
-install: build/Makefile 
+install: thirdparty/tengine/tengine-master/Makefile
 	rm -f release/logs/*
-	make -j$(NPROCS) -C build install
+	make -j$(NPROCS) -C thirdparty/tengine/tengine-master install
 	#/bin/bash ./sbin/dso_tool  --add-module=/home/tanguofu/libs/nginx-app/protorpc_module
 
 clean:
-	make -C build clean
+	make -C thirdparty/tengine/tengine-master clean
+	rm -fr build/*
 
 rebuild:
 	rm -fr jemalloc
 	rm -fr tengine
 
-build/Makefile:  thirdparty/tengine/tengine-master/configure
+thirdparty/tengine/tengine-master/Makefile: thirdparty/tengine/tengine-master/configure
 	mkdir -p build
 	cd thirdparty/tengine/tengine-master; \
-	./configure  --prefix=$(INSTALL) --builddir=$(BUILD) \
+	./configure  --prefix=$(INSTALL) \
         --with-debug \
         --with-backtrace_module \
         --with-link=g++ \
-        --with-cc-opt="-O0 -g -ggdb -ggdb3" 
-#        --add-module=$(PWD)/soap_sub_module 
-        
+        --with-cc-opt=" -O0 -g -ggdb -ggdb3" \
+        --with-cxx-opt=" -std=c++11 "\
+        --add-module=$(PWD)/inspect_server \
+        --add-module=$(PWD)/ngx_rpc_module
 
 	
 

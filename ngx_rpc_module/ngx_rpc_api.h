@@ -12,16 +12,16 @@ extern "C" {
 #include <ngx_log.h>
 
 
-struct ngx_http_rpc_ctx
+typedef struct ngx_http_rpc_ctx_t
 {
 
-};
+} ngx_http_rpc_ctx;
 
 
-struct ngx_http_rpc_conf
+typedef struct ngx_http_rpc_conf_t
 {
     ngx_str_t json_conf_path; // the conf path
-};
+} ngx_http_rpc_conf;
 
 
 //ngx_int_t           (*init_module)(ngx_cycle_t *cycle);
@@ -36,11 +36,8 @@ extern ngx_module_t ngx_http_rpc_module;
 
 void ngx_http_rpc_post_hander(ngx_http_request_t *r);
 
-
-
-
 #ifdef __cplusplus
-extern "C" {
+}
 #endif
 
 #endif //_NGX_RPC_API_H_

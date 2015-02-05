@@ -1,8 +1,3 @@
-#include <ngx_config.h>
-#include <ngx_core.h>
-#include <ngx_http.h>
-#include <ngx_log.h>
-
 #include "ngx_rpc_api.h"
 
 // for content handler
@@ -24,7 +19,7 @@ static ngx_command_t  ngx_http_rpc_module_commands[] = {
       NGX_HTTP_SRV_CONF | NGX_CONF_NOARGS,
       ngx_conf_set_path_slot,
       NGX_HTTP_SRV_CONF_OFFSET,
-      offsetof(ngx_http_rpc_module_conf_t, json_conf_path),
+      offsetof(ngx_http_rpc_conf, json_conf_path),
       NULL },
     ngx_null_command
 };
@@ -63,13 +58,13 @@ ngx_module_t  ngx_http_rpc_module = {
 };
 
 
-///
-/// \brief ngx_http_rpc_preconfiguration
-///        add the ngx_http_rpc_handler
-/// \param cf
-/// \return
-///
+
 ngx_int_t ngx_http_rpc_preconfiguration(ngx_conf_t *cf)
+{
+    return 0;
+}
+
+ngx_int_t ngx_http_rpc_postconfiguration(ngx_conf_t *cf)
 {
     ngx_http_handler_pt *h = NULL;
 
@@ -80,11 +75,6 @@ ngx_int_t ngx_http_rpc_preconfiguration(ngx_conf_t *cf)
 
     *h = ngx_http_rpc_handler;
 
-    return 0;
-}
-
-
-ngx_int_t ngx_http_rpc_postconfiguration(ngx_conf_t *cf){
 
     ngx_http_next_header_filter =
             ngx_http_top_header_filter;
@@ -104,9 +94,9 @@ ngx_int_t ngx_http_rpc_postconfiguration(ngx_conf_t *cf){
 
 void* ngx_http_soap_sub_create_srv_conf(ngx_conf_t *cf)
 {
-    ngx_http_rpc_conf_t *conf = (ngx_http_rpc_conf_t *)ngx_pcalloc(
+    ngx_http_rpc_conf *conf = (ngx_http_rpc_conf*)ngx_pcalloc(
                 cf->pool,
-                sizeof(ngx_http_rpc_conf_t));
+                sizeof(ngx_http_rpc_conf));
 
     if(conf == NULL)
     {

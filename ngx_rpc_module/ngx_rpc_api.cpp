@@ -1,8 +1,15 @@
 #include "ngx_rpc_api.h"
 
+#include<google/protobuf/descriptor.h>
+#include<google/protobuf/message.h>
+#include<google/protobuf/service.h>
+
+
 #include "ngx_rpc_router.h"
 #include "ngx_rpc_server_impl.h"
 #include "ngx_rpc_server_list.h"
+
+
 
 ngx_int_t ngx_http_rpc_master_init(ngx_cycle_t *cycle)
 {
@@ -10,11 +17,12 @@ ngx_int_t ngx_http_rpc_master_init(ngx_cycle_t *cycle)
 
     for(int i=0; all_rpc_services[i]; ++i)
     {
-         ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0,
+        /*   ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0,
                        "RegisterSerive:%s",
                        all_rpc_services[i]->GetDescriptor()->full_name.c_str());
+                       */
 
-         NgxRpcRouter::RegisterSerive(all_rpc_services[i]);
+        NgxRpcRouter::RegisterSerive(all_rpc_services[i]);
     }
 
     return NGX_OK;
@@ -46,12 +54,12 @@ void ngx_http_rpc_process_exit(ngx_cycle_t *cycle)
 void ngx_http_rpc_post_hander(ngx_http_request_t *r)
 {
 
-    ngx_http_rpc_ctx * ctx =
-            ngx_http_get_module_ctx(r, ngx_http_rpc_module);
+    ngx_http_rpc_ctx *ctx =
+            ( ngx_http_rpc_ctx *)ngx_http_get_module_ctx(r, ngx_http_rpc_module);
 
     if(ctx == NULL)
     {
-        ctx = ngx_palloc(r->pool, sizeof(ngx_http_rpc_ctx));
+        ctx = (ngx_http_rpc_ctx *)ngx_palloc(r->pool, sizeof(ngx_http_rpc_ctx));
         if(ctx == NULL)
         {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -60,10 +68,10 @@ void ngx_http_rpc_post_hander(ngx_http_request_t *r)
             return;
         }
         //TODO init the ctx here
-        ngx_http_set_ctx(r, ctx, ngx_http_soap_sub_module);
+        ngx_http_set_ctx(r, ctx, ngx_http_rpc_module);
     }
 
-    ngx_http_rpc_conf *conf = ngx_http_get_module_loc_conf(r, ngx_http_rpc_module);
+    // ngx_http_rpc_conf *conf = ngx_http_get_module_loc_conf(r, ngx_http_rpc_module);
 
 
 
@@ -78,12 +86,12 @@ void ngx_http_rpc_post_hander(ngx_http_request_t *r)
 
 
     //2 find the route serices
-    const ::google::protobuf::Service* srv;
-    const ::google::protobuf::MethodDescriptor *mdes;
+    const ::google::protobuf::Service* srv = NULL;
+    const ::google::protobuf::MethodDescriptor *mdes = NULL;
 
-    std::string method(r->uri.data, r->uri.len);
+    std::string method((const char *)(r->uri.data), r->uri.len);
 
-    NgxRpcRouter::FindServiceByMethodFullName(method, srv, mdes);
+    NgxRpcRouter::FindByMethodFullName(method, srv, mdes);
 
     if(srv == NULL || mdes == NULL)
     {
@@ -100,11 +108,13 @@ void ngx_http_rpc_post_hander(ngx_http_request_t *r)
 
     // parse the request from the body buffer;
 
-    std::shared_ptr<NgxRpcServerController>
-            cntl(new NgxRpcServerController());
+    //std::shared_ptr<NgxRpcServerController>
+    //        cntl(new NgxRpcServerController());
 
-    ::google::protobuf::Closure * done = ::google::protobuf::NewCallback(cntl, &NgxRpcServerController::FinishRequest, , req, res);
+    NgxRpcServerController * cntl = new NgxRpcServerController();
+    ::google::protobuf::Closure *done = ::google::protobuf::NewCallback(cntl, &NgxRpcServerController::FinishRequest, req, res);
 
-    srv->CallMethod(mdes, cntl, req, res, done);
+    ::google::protobuf::Service* ptr = const_cast< ::google::protobuf::Service*>(srv);
+    ptr->CallMethod(mdes, cntl, req.get(), res.get(), done);
 
 }
