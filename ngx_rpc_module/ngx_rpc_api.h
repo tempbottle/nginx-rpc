@@ -34,7 +34,7 @@ void      ngx_http_rpc_process_exit(ngx_cycle_t *cycle);
 
 extern ngx_module_t ngx_http_rpc_module;
 
-void ngx_http_rpc_post_hander(ngx_http_request_t *r);
+void ngx_http_rpc_post_handler(ngx_http_request_t *r);
 
 #ifdef __cplusplus
 }

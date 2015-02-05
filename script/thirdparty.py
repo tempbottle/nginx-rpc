@@ -5,10 +5,9 @@ boost = {
      
      "init":
        [
-         "mkdir build",
          "rm -fr boost_1_57_0",
-         "tar zxf boost_1_57_0.tar.gz"
-         
+         "tar zxf boost_1_57_0.tar.gz",
+         "mkdir build"
        ],
       
       "configure":
@@ -36,11 +35,11 @@ protobuf = {
       
      "init":
        [
-         "mkdir build",
          "rm -fr protobuf-master",
          "unzip -q protobuf-master.zip",
          "cp ../../patches/gtest-1.7.0.zip .",
-         "patch -p0 -i ../../patches/use_local_gtest.patch" 
+         "patch -p0 -i ../../patches/use_local_gtest.patch",
+         "mkdir build"
        ],
       
       "configure":
@@ -54,7 +53,8 @@ protobuf = {
       
      "update":
        [
-         "wget -c https://codeload.github.com/google/protobuf/zip/master -o protobuf-master.zip"
+       
+         "ls protobuf-master.zip || wget -c https://codeload.github.com/google/protobuf/zip/master -O protobuf-master.zip"
        ]
 }
 
@@ -78,10 +78,10 @@ tengine = {
       ],
       
      "update":
-      [
-         "wget -c https://codeload.github.com/alibaba/tengine/zip/master -o tengine-master.zip"
+      [  "touch "
+         "ls tengine-master.zip || wget -c https://codeload.github.com/alibaba/tengine/zip/master -O tengine-master.zip"
       ]
 }
 
 #tc malloc or jemalloc
-depends = [ boost, protobuf, tengine]
+depends = [ protobuf, tengine]

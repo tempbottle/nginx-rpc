@@ -4,6 +4,7 @@
 
 TEMPLATE = app
 TARGET = nginx-rpc
+CONFIG += c++11
 INCLUDEPATH += . \
                thirdparty/tengine/tengine-master/src/core \
                build \

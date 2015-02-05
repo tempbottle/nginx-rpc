@@ -114,7 +114,14 @@ void* ngx_http_soap_sub_create_srv_conf(ngx_conf_t *cf)
 /** just foward process the body */
 ngx_int_t ngx_http_rpc_handler(ngx_http_request_t *r)
 {
-    ngx_int_t rc = ngx_http_read_client_request_body(r, ngx_http_rpc_post_hander);
+    // 1 only process the POST
+    if (r->method != NGX_HTTP_POST)
+    {
+        return NGX_DECLINED;
+    }
+
+    // 2 forward the post handler
+    ngx_int_t rc = ngx_http_read_client_request_body(r, ngx_http_rpc_post_handler);
 
     if(rc >=  NGX_HTTP_SPECIAL_RESPONSE)
     {

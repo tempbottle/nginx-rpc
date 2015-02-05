@@ -34,6 +34,17 @@ def do_sub_cmd(project, key):
     
 
 def init_third_party(project, gcc_path):
+
+    thirdparty = realpath +"/thirdparty"
+    
+    
+    if not os.access(realpath + "/" +project['work_directory'], os.R_OK):
+        os.system("mkdir -p "+ realpath + "/" +project['work_directory'] )
+    
+    
+    # do update 
+    if 0 != do_sub_cmd(project, "update"):
+       return 0
     
     # do init
     if 0 != do_sub_cmd(project, "init"):

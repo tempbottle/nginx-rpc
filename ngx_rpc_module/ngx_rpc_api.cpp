@@ -51,9 +51,10 @@ void ngx_http_rpc_process_exit(ngx_cycle_t *cycle)
     return;
 }
 
-void ngx_http_rpc_post_hander(ngx_http_request_t *r)
+void ngx_http_rpc_post_handler(ngx_http_request_t *r)
 {
 
+    // 1 init the ctx
     ngx_http_rpc_ctx *ctx =
             ( ngx_http_rpc_ctx *)ngx_http_get_module_ctx(r, ngx_http_rpc_module);
 
@@ -71,11 +72,12 @@ void ngx_http_rpc_post_hander(ngx_http_request_t *r)
         ngx_http_set_ctx(r, ctx, ngx_http_rpc_module);
     }
 
+    // 2 get the content
     // ngx_http_rpc_conf *conf = ngx_http_get_module_loc_conf(r, ngx_http_rpc_module);
 
 
 
-    //1 check the request
+    //3  check the request
     if(r->request_body == NULL
             || r->request_body->bufs == NULL)
     {
@@ -84,8 +86,12 @@ void ngx_http_rpc_post_hander(ngx_http_request_t *r)
         return;
     }
 
+    //4 do with the content-type
 
-    //2 find the route serices
+
+
+
+    //5  find the route serices
     const ::google::protobuf::Service* srv = NULL;
     const ::google::protobuf::MethodDescriptor *mdes = NULL;
 
@@ -100,16 +106,19 @@ void ngx_http_rpc_post_hander(ngx_http_request_t *r)
         return;
     }
 
-    //3 do with rpc method
+    //7 do with rpc method
     std::shared_ptr< ::google::protobuf::Message>
             req(srv->GetRequestPrototype(mdes).New());
     std::shared_ptr< ::google::protobuf::Message>
             res(srv->GetResponsePrototype(mdes).New());
 
-    // parse the request from the body buffer;
+    // 7 parse the request from the body buffer;
+
 
     //std::shared_ptr<NgxRpcServerController>
     //        cntl(new NgxRpcServerController());
+
+    //req->ParseFromArray()
 
     NgxRpcServerController * cntl = new NgxRpcServerController();
     ::google::protobuf::Closure *done = ::google::protobuf::NewCallback(cntl, &NgxRpcServerController::FinishRequest, req, res);
