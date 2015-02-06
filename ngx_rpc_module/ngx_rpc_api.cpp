@@ -1,27 +1,26 @@
-#include "ngx_rpc_api.h"
-
 #include<google/protobuf/descriptor.h>
 #include<google/protobuf/message.h>
 #include<google/protobuf/service.h>
 
 
+#include "ngx_rpc_api.h"
+#include "ngx_log_cpp.h"
+
 #include "ngx_rpc_router.h"
 #include "ngx_rpc_server_impl.h"
 #include "ngx_rpc_server_list.h"
-
-
+#include "ngx_rpc_buffer.h"
+#include "ngx_rpc_server_controller.h"
 
 ngx_int_t ngx_http_rpc_master_init(ngx_cycle_t *cycle)
 {
-    ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0, "ngx_http_rpc_process_init");
+    set_cache_log(cycle->log);
+
+    ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0, "ngx_http_rpc_process_init log done");
 
     for(int i=0; all_rpc_services[i]; ++i)
     {
-        /*   ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0,
-                       "RegisterSerive:%s",
-                       all_rpc_services[i]->GetDescriptor()->full_name.c_str());
-                       */
-
+        INFO("RegisterSerive:"<<all_rpc_services[i]->GetDescriptor()->full_name());
         NgxRpcRouter::RegisterSerive(all_rpc_services[i]);
     }
 
@@ -31,7 +30,6 @@ ngx_int_t ngx_http_rpc_master_init(ngx_cycle_t *cycle)
 void ngx_http_rpc_master_exit(ngx_cycle_t *cycle)
 {
     ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0, "ngx_http_rpc_process_exit");
-
 
     return;
 }
@@ -89,13 +87,10 @@ void ngx_http_rpc_post_handler(ngx_http_request_t *r)
     //4 do with the content-type
 
 
-
-
     //5  find the route serices
     const ::google::protobuf::Service* srv = NULL;
     const ::google::protobuf::MethodDescriptor *mdes = NULL;
-
-    std::string method((const char *)(r->uri.data), r->uri.len);
+    const std::string method((const char *)(r->uri.data), r->uri.len);
 
     NgxRpcRouter::FindByMethodFullName(method, srv, mdes);
 
@@ -107,23 +102,36 @@ void ngx_http_rpc_post_handler(ngx_http_request_t *r)
     }
 
     //7 do with rpc method
-    std::shared_ptr< ::google::protobuf::Message>
-            req(srv->GetRequestPrototype(mdes).New());
-    std::shared_ptr< ::google::protobuf::Message>
-            res(srv->GetResponsePrototype(mdes).New());
 
-    // 7 parse the request from the body buffer;
+    std::shared_ptr<NgxRpcServerController> cntl(
+                new NgxRpcServerController(
+                        r,
+                        srv->GetRequestPrototype(mdes).New(),
+                        srv->GetResponsePrototype(mdes).New()
+                    )
+                );
+
+    NgxChainBufferReader reader(*r->request_body->bufs);
+
+    if(!cntl->req->ParseFromZeroCopyStream(&reader))
+    {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log,
+                      0,
+                      "parser request fialed:%V, msg name:%s",
+                      &r->uri, cntl->req->GetTypeName().c_str());
+
+        ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
+        return;
+    }
 
 
-    //std::shared_ptr<NgxRpcServerController>
-    //        cntl(new NgxRpcServerController());
+    ::google::protobuf::Closure *done =
+            ::google::protobuf::NewCallback(
+                &NgxRpcServerController::FinishRequest, cntl);
 
-    //req->ParseFromArray()
+    ::google::protobuf::Service* ptr =
+            const_cast< ::google::protobuf::Service*>(srv);
 
-    NgxRpcServerController * cntl = new NgxRpcServerController();
-    ::google::protobuf::Closure *done = ::google::protobuf::NewCallback(cntl, &NgxRpcServerController::FinishRequest, req, res);
-
-    ::google::protobuf::Service* ptr = const_cast< ::google::protobuf::Service*>(srv);
-    ptr->CallMethod(mdes, cntl, req.get(), res.get(), done);
+     ptr->CallMethod(mdes, cntl.get(), cntl->req.get(), cntl->res.get(), done);
 
 }

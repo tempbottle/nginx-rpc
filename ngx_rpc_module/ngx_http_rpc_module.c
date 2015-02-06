@@ -66,6 +66,8 @@ ngx_int_t ngx_http_rpc_preconfiguration(ngx_conf_t *cf)
 
 ngx_int_t ngx_http_rpc_postconfiguration(ngx_conf_t *cf)
 {
+
+    // 1 add content handler
     ngx_http_handler_pt *h = NULL;
 
     ngx_http_core_main_conf_t *cmcf =
@@ -76,16 +78,15 @@ ngx_int_t ngx_http_rpc_postconfiguration(ngx_conf_t *cf)
     *h = ngx_http_rpc_handler;
 
 
+    // 2 add filter
     ngx_http_next_header_filter =
             ngx_http_top_header_filter;
-
-    ngx_http_top_header_filter =
+    ngx_http_top_header_filter  =
             ngx_http_filter_rpc_header_filter;
 
-    ngx_http_next_body_filter =
+    ngx_http_next_body_filter   =
             ngx_http_top_body_filter;
-
-    ngx_http_top_body_filter =
+    ngx_http_top_body_filter    =
             ngx_http_filter_rpc_body_filter;
 
     return NGX_OK;

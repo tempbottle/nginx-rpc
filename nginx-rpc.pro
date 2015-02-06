@@ -273,7 +273,10 @@ SOURCES += build/ngx_auto_config.h \
            thirdparty/protobuf/4.9/include/google/protobuf/compiler/java/java_names.h \
            thirdparty/protobuf/4.9/include/google/protobuf/compiler/javanano/javanano_generator.h \
            thirdparty/protobuf/4.9/include/google/protobuf/compiler/python/python_generator.h \
-           thirdparty/protobuf/4.9/include/google/protobuf/compiler/ruby/ruby_generator.h
+           thirdparty/protobuf/4.9/include/google/protobuf/compiler/ruby/ruby_generator.h \
+    ngx_rpc_module/ngx_log_cpp.cpp \
+    ngx_rpc_module/ngx_rpc_server_controller.cpp \
+    ngx_rpc_module/ngx_rpc_buffer.cpp
 SOURCES += build/ngx_modules.c \
            inspect_server/inspect.pb.cc \
            inspect_server/inspect_server_impl.cpp \
@@ -547,3 +550,9 @@ OTHER_FILES += \
     ngx_rpc_module/config \
     Makefile \
     inspect_server/config
+
+SOURCES += \
+    ngx_rpc_module/ngx_rpc_server_controller.h
+
+SOURCES += \
+    ngx_rpc_module/ngx_rpc_buffer.h
