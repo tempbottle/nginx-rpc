@@ -67,7 +67,9 @@ tengine = {
          "mkdir build",
          "rm -fr tengine-master",
          "unzip -q tengine-master.zip",
-         "cd tengine-master; patch -p1 -i ../../../patches/set_linker.patch" 
+         "cd tengine-master; patch -p1 -i ../../../patches/set_linker.patch",
+         "cd tengine-master; patch -p1 -i ../../../patches/add_libnginx.a.patch",
+         "cd tengine-master; patch -p1 -i ../../../patches/set_cxxflags_in_addons.patch"
        ],
       
       "configure":
@@ -78,7 +80,7 @@ tengine = {
       ],
       
      "update":
-      [  "touch "
+      [   
          "ls tengine-master.zip || wget -c https://codeload.github.com/alibaba/tengine/zip/master -O tengine-master.zip"
       ]
 }

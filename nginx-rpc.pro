@@ -276,7 +276,9 @@ SOURCES += build/ngx_auto_config.h \
            thirdparty/protobuf/4.9/include/google/protobuf/compiler/ruby/ruby_generator.h \
     ngx_rpc_module/ngx_log_cpp.cpp \
     ngx_rpc_module/ngx_rpc_server_controller.cpp \
-    ngx_rpc_module/ngx_rpc_buffer.cpp
+    ngx_rpc_module/ngx_rpc_buffer.cpp \
+    ngx_rpc_module/ngx_rpc_client_api.cpp \
+    bench/ngx_client.cpp
 SOURCES += build/ngx_modules.c \
            inspect_server/inspect.pb.cc \
            inspect_server/inspect_server_impl.cpp \
@@ -556,3 +558,6 @@ SOURCES += \
 
 SOURCES += \
     ngx_rpc_module/ngx_rpc_buffer.h
+
+SOURCES += \
+    ngx_rpc_module/ngx_rpc_client_api.h

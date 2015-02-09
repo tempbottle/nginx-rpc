@@ -24,6 +24,7 @@ typedef struct ngx_http_rpc_conf_t
 } ngx_http_rpc_conf;
 
 
+// for rpc server
 //ngx_int_t (*init_module)(ngx_cycle_t *cycle);
 ngx_int_t ngx_http_rpc_master_init(ngx_cycle_t *cycle);
 void      ngx_http_rpc_master_exit(ngx_cycle_t *cycle);
@@ -34,6 +35,11 @@ void      ngx_http_rpc_process_exit(ngx_cycle_t *cycle);
 
 extern ngx_module_t ngx_http_rpc_module;
 void ngx_http_rpc_post_handler(ngx_http_request_t *r);
+
+
+// for rpc client
+
+
 
 #ifdef __cplusplus
 }

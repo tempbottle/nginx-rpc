@@ -1,0 +1,37 @@
+diff --git a/auto/install b/auto/install
+index 9a997a0..a97594d 100644
+--- a/auto/install
++++ b/auto/install
+@@ -191,6 +191,11 @@ cat << END                                                    >> $NGX_MAKEFILE
+ 			'\$(DESTDIR)$NGX_SBIN_PATH.old'
+ 	cp $NGX_OBJS/nginx '\$(DESTDIR)$NGX_SBIN_PATH'
+ 
++	test -f '\$(DESTDIR)${NGX_PREFIX}/lib' \
++		|| mkdir -p '\$(DESTDIR)${NGX_PREFIX}/lib'
++	test -f $NGX_OBJS/libnginx.a \
++		&& cp $NGX_OBJS/libnginx.a '\$(DESTDIR)${NGX_PREFIX}/lib'
++
+ 	test -d '\$(DESTDIR)$NGX_CONF_PREFIX' \
+ 		|| mkdir -p '\$(DESTDIR)$NGX_CONF_PREFIX'
+ 
+diff --git a/auto/make b/auto/make
+index 5397bf8..a0b5102 100644
+--- a/auto/make
++++ b/auto/make
+@@ -242,12 +242,16 @@ END
+ 
+ fi
+ 
++
++ngx_lib_objs=`echo ${ngx_objs} | sed  -e "s/ objs\/src\/core\/nginx.o//" -e "s/ \\\\\\ /$ngx_long_regex_cont/g"`
++
+ cat << END                                                    >> $NGX_MAKEFILE
+ 
+ $NGX_OBJS${ngx_dirsep}nginx${ngx_binext}:	$ngx_deps$ngx_spacer
+ 	\$(LINK) ${ngx_long_start}${ngx_binout}$NGX_OBJS${ngx_dirsep}nginx$ngx_long_cont$ngx_objs$ngx_libs$ngx_link$NGX_EXTEND_LD_OPT
+ 	$ngx_rcc
+ ${ngx_long_end}
++	ar crv $NGX_OBJS${ngx_dirsep}libnginx.a$ngx_long_cont${ngx_lib_objs}
+ END
+ 
+ 

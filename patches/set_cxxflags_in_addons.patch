@@ -1,15 +1,17 @@
-diff -Narpu master_tengine/auto/cc/gcc mynewtengine/auto/cc/gcc
---- master_tengine/auto/cc/gcc	2015-02-05 19:45:30.473619755 +0800
-+++ mynewtengine/auto/cc/gcc	2015-02-05 19:34:51.697638666 +0800
+diff --git a/auto/cc/gcc b/auto/cc/gcc
+index c27d857..92669ac 100644
+--- a/auto/cc/gcc
++++ b/auto/cc/gcc
 @@ -179,3 +179,5 @@ CFLAGS="$CFLAGS -g"
  if [ ".$CPP" = "." ]; then
      CPP="$CC -E"
  fi
 +
 +CXXFLAGS="${CXXFLAGS}"
-diff -Narpu master_tengine/auto/make mynewtengine/auto/make
---- master_tengine/auto/make	2015-02-05 19:45:35.065619619 +0800
-+++ mynewtengine/auto/make	2015-02-05 19:37:45.501633520 +0800
+diff --git a/auto/make b/auto/make
+index 5397bf8..23815e6 100644
+--- a/auto/make
++++ b/auto/make
 @@ -52,7 +52,7 @@ CC =	$CC
  CFLAGS = $CFLAGS
  CPP =	$CPP
@@ -19,29 +21,34 @@ diff -Narpu master_tengine/auto/make mynewtengine/auto/make
  END
  
  
-@@ -408,11 +408,17 @@ if test -n "$NGX_ADDON_SRCS"; then
+@@ -392,7 +392,7 @@ fi
+ 
+ if test -n "$NGX_ADDON_SRCS"; then
+ 
+-    ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) $ngx_use_pch \$(ALL_INCS)"
++    #ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) $ngx_use_pch \$(ALL_INCS)"
+ 
+     for ngx_src in $NGX_ADDON_SRCS
+     do
+@@ -408,6 +408,13 @@ if test -n "$NGX_ADDON_SRCS"; then
                    -e "s#^\(.*\.\)S\\$#$ngx_objs_dir\1$ngx_objext#g"`
  
          ngx_src=`echo $ngx_src | sed -e "s/\//$ngx_regex_dirsep/g"`
 +        
++        ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) $ngx_use_pch \$(ALL_INCS)"
++        
 +        #if the ngx_src is c++ file, add CXXFLAGS to ngx_cc.
-+        flags=""
-+        if [ "${ngx_src##*.}"="cc" ] || [ "${ngx_src##*.}"="cpp" ];then 
-+            flags=" \$(CXXFLAGS)"
++        if [ "${ngx_src##*.}" = "cc" ] || [ "${ngx_src##*.}" = "cpp" ];then
++            ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) \$(CXXFLAGS) $ngx_use_pch \$(ALL_INCS)"
 +        fi
  
          cat << END                                            >> $NGX_MAKEFILE
  
- $ngx_obj:	\$(ADDON_DEPS)$ngx_cont$ngx_src
--	$ngx_cc$ngx_tab$ngx_objout$ngx_obj$ngx_tab$ngx_src$NGX_AUX
-+	$ngx_cc$flags$ngx_tab$ngx_objout$ngx_obj$ngx_tab$ngx_src$NGX_AUX
- 
- END
-      done
-diff -Narpu master_tengine/auto/options mynewtengine/auto/options
---- master_tengine/auto/options	2015-02-05 19:45:38.297619523 +0800
-+++ mynewtengine/auto/options	2015-02-05 19:37:51.689633337 +0800
-@@ -664,6 +664,7 @@ use the \"--without-http_limit_conn_modu
+diff --git a/auto/options b/auto/options
+index 6bb6b72..fb844d7 100644
+--- a/auto/options
++++ b/auto/options
+@@ -664,6 +664,7 @@ use the \"--without-http_limit_conn_module\" option instead"
          --with-cc=*)                     CC="$value"                ;;
          --with-cpp=*)                    CPP="$value"               ;;
          --with-cc-opt=*)                 NGX_CC_OPT="$value"        ;;
