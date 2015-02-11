@@ -274,11 +274,12 @@ SOURCES += build/ngx_auto_config.h \
            thirdparty/protobuf/4.9/include/google/protobuf/compiler/javanano/javanano_generator.h \
            thirdparty/protobuf/4.9/include/google/protobuf/compiler/python/python_generator.h \
            thirdparty/protobuf/4.9/include/google/protobuf/compiler/ruby/ruby_generator.h \
-    ngx_rpc_module/ngx_log_cpp.cpp \
-    ngx_rpc_module/ngx_rpc_server_controller.cpp \
-    ngx_rpc_module/ngx_rpc_buffer.cpp \
-    ngx_rpc_module/ngx_rpc_client_api.cpp \
-    bench/ngx_client.cpp
+           ngx_rpc_module/ngx_log_cpp.cpp \
+           ngx_rpc_module/ngx_rpc_server_controller.cpp \
+           ngx_rpc_module/ngx_rpc_buffer.cpp \
+           ngx_rpc_module/ngx_rpc_client_api.cpp \
+           bench/ngx_client.cpp
+
 SOURCES += build/ngx_modules.c \
            inspect_server/inspect.pb.cc \
            inspect_server/inspect_server_impl.cpp \
@@ -548,7 +549,7 @@ SOURCES += build/ngx_modules.c \
            thirdparty/tengine/tengine-master/src/http/modules/tfs/ngx_http_tfs_timers.c \
            thirdparty/tengine/tengine-master/src/http/modules/tfs/ngx_tfs_common.c
 
-OTHER_FILES += \
+SOURCES += \
     ngx_rpc_module/config \
     Makefile \
     inspect_server/config
@@ -560,4 +561,8 @@ SOURCES += \
     ngx_rpc_module/ngx_rpc_buffer.h
 
 SOURCES += \
-    ngx_rpc_module/ngx_rpc_client_api.h
+    ngx_rpc_module/ngx_rpc_client_api.h \
+    bench/config \
+    bench/config.make \
+    ngx_rpc_module/config.make
+

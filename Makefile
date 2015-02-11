@@ -10,8 +10,11 @@ NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
 
 install: thirdparty/tengine/tengine-master/Makefile
 	rm -f release/logs/*
+	make -j$(NPROCS) -C thirdparty/tengine/tengine-master
+	make -C thirdparty/tengine/tengine-master -f objs/Makefile objs/libnginx.a
+	make -C thirdparty/tengine/tengine-master -f objs/Makefile objs/ngx_client
 	make -j$(NPROCS) -C thirdparty/tengine/tengine-master install
-	#/bin/bash ./sbin/dso_tool  --add-module=/home/tanguofu/libs/nginx-app/protorpc_module
+
 
 clean:
 	make -C thirdparty/tengine/tengine-master clean
@@ -31,14 +34,8 @@ thirdparty/tengine/tengine-master/Makefile: thirdparty/tengine/tengine-master/co
         --with-cc-opt=" -O0 -g -ggdb -ggdb3" \
         --with-cxx-opt=" -std=c++11 "\
         --add-module=$(PWD)/inspect_server \
-        --add-module=$(PWD)/ngx_rpc_module
-
-	
-
-
-	
-	
-        
+        --add-module=$(PWD)/ngx_rpc_module \
+        --add-module=$(PWD)/bench
 
 #        --add-module=$(PWD)/test \
 #        --add-module=$(PWD)/rpc_proc
