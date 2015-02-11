@@ -1,0 +1,2 @@
+NGX_CLIENT_BINS="$NGX_CLIENT_BINS \
+    $ngx_addon_dir/ngx_client.cpp "
