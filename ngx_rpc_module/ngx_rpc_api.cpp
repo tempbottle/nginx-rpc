@@ -39,6 +39,8 @@ ngx_int_t ngx_http_rpc_process_init(ngx_cycle_t *cycle)
     // do some init here
     ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0, "ngx_http_rpc_process_init");
 
+
+
     //TODO init the TLS data
     return NGX_OK;
 }
