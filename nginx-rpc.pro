@@ -563,6 +563,5 @@ SOURCES += \
 SOURCES += \
     ngx_rpc_module/ngx_rpc_client_api.h \
     bench/config \
-    bench/config.make \
     ngx_rpc_module/config.make
 

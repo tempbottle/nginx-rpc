@@ -5,6 +5,8 @@
 //push a callback
 
 //ngx_cycle
+
+/*
 ngx_http_request_t * new_request(ngx_cycle_t *cycle)
 {
       ngx_http_request_t * r = ngx_palloc(cycle->pool, sizeof(ngx_http_request_t));
@@ -13,10 +15,13 @@ ngx_http_request_t * new_request(ngx_cycle_t *cycle)
 
       r->connection = ngx_get_connection(s, ev->log);
 
+}*/
+
+
+void begin_send(){
 
 
 }
-
 
 
 
@@ -24,8 +29,7 @@ int main(int argc, char* argv[])
 {
     printf("hehe");
 
-
-    ngx_main(argc, argv);
+    _ngx_main(argc, argv);
 
     return 0;
 }

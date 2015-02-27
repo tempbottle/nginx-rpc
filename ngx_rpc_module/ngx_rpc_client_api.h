@@ -12,9 +12,11 @@ extern "C" {
 #include <ngx_core.h>
 #include <ngx_http.h>
 #include <ngx_log.h>
-#include <nginx.h>
 
-int ngx_main(int argc, char *const *argv);
+
+int _ngx_main(int argc, char *const *argv);
+
+// add eventfd to trigger the nginx
 
 
 #ifdef __cplusplus

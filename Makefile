@@ -33,9 +33,11 @@ thirdparty/tengine/tengine-master/Makefile: thirdparty/tengine/tengine-master/co
         --with-link=g++ \
         --with-cc-opt=" -O0 -g -ggdb -ggdb3" \
         --with-cxx-opt=" -std=c++11 "\
-        --add-module=$(PWD)/inspect_server \
         --add-module=$(PWD)/ngx_rpc_module \
-        --add-module=$(PWD)/bench
+        --add-module=$(PWD)/bench \
+        --add-module=$(PWD)/inspect_server
+
+
 
 #        --add-module=$(PWD)/test \
 #        --add-module=$(PWD)/rpc_proc
