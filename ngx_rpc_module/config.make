@@ -19,7 +19,6 @@ END
 #2 link the libngx
 libngx_objs=`echo ${ngx_objs} | sed -e "s|objs/src/core/nginx.o|$ngx_main_objs|" -e "s/ \\\\\\ /$ngx_long_regex_cont/g"`
 
-
 cat << END                                                >> $NGX_MAKEFILE
 $libngx:	$libngx_objs$ngx_spacer
 	ar crv $libngx$ngx_long_cont$libngx_objs
@@ -27,7 +26,6 @@ ${ngx_long_end}
 	test -f $NGX_PREFIX/lib || mkdir -p $NGX_PREFIX/lib
 	cp -f $libngx $NGX_PREFIX/lib
 END
-
 
 # 3 compile the client
 libincs=" \$(CFLAGS) \$(CXXFLAGS) \$(ALL_INCS)"
@@ -39,7 +37,7 @@ do
 
 cat << END                                                    >> $NGX_MAKEFILE
 
-$client_bin:	$libclient
+$client_bin:	$client $libclient
 	\$(LINK) ${ngx_long_start}${ngx_binout}$client_bin$ngx_long_cont$libincs$ngx_long_cont$client$ngx_long_cont$libngx$ngx_libs$ngx_link$NGX_EXTEND_LD_OPT$ngx_rcc
 ${ngx_long_end}
 	test -f $NGX_PREFIX/sbin || mkdir -p $NGX_PREFIX/sbin

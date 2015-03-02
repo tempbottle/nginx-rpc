@@ -12,15 +12,22 @@ extern "C" {
 #include <ngx_log.h>
 
 
+
+
+
+// associate the http request
 typedef struct ngx_http_rpc_ctx_t
 {
 
 } ngx_http_rpc_ctx;
 
 
+
+
 typedef struct ngx_http_rpc_conf_t
 {
     ngx_str_t json_conf_path; // the conf path
+
 } ngx_http_rpc_conf;
 
 
@@ -38,8 +45,17 @@ void ngx_http_rpc_post_handler(ngx_http_request_t *r);
 
 
 // for rpc client
+typedef void(*ngx_rpc_post_handler_pt)(void *ctx);
+int ngx_rpc_post_task(ngx_rpc_post_handler_pt callback, void *data);
 
 
+typedef struct {
+    ngx_rpc_post_handler_pt handler;
+    void *ctx;
+} ngx_notify_queue_t ;
+
+extern ngx_notify_queue_t ngx_rpc_post_start;
+extern int _ngx_main(int argc, char* argv[]);
 
 #ifdef __cplusplus
 }

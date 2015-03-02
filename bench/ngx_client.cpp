@@ -1,33 +1,28 @@
-#include "ngx_rpc_module/ngx_rpc_client_api.h"
+#include "ngx_rpc_module/ngx_rpc_api.h"
 
-//add a event fd to poll
+typedef struct {
+   const char * data;
+} bench_ctx_t;
 
-//push a callback
-
-//ngx_cycle
-
-/*
-ngx_http_request_t * new_request(ngx_cycle_t *cycle)
+void bench(void *ctx)
 {
-      ngx_http_request_t * r = ngx_palloc(cycle->pool, sizeof(ngx_http_request_t));
-
-      memset(r,0, sizeof(ngx_http_request_t));
-
-      r->connection = ngx_get_connection(s, ev->log);
-
-}*/
-
-
-void begin_send(){
-
-
+   // bench_ctx_t * c = (bench_ctx_t *) ctx;
+    printf("this from bench\n");
 }
 
 
+void ngx_bench_main(void * test){
+
+    bench_ctx_t ctx = {"hehe"};
+    ngx_rpc_post_task(bench, &ctx);
+}
 
 int main(int argc, char* argv[])
 {
-    printf("hehe");
+    printf("start bench:\n");
+
+    ngx_rpc_post_start.ctx =  NULL;
+    ngx_rpc_post_start.handler = ngx_bench_main;
 
     _ngx_main(argc, argv);
 

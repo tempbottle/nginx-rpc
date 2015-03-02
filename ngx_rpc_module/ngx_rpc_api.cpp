@@ -1,6 +1,4 @@
-#include<google/protobuf/descriptor.h>
-#include<google/protobuf/message.h>
-#include<google/protobuf/service.h>
+#include <sys/eventfd.h>
 
 
 #include "ngx_rpc_api.h"
@@ -11,6 +9,81 @@
 #include "ngx_rpc_server_list.h"
 #include "ngx_rpc_buffer.h"
 #include "ngx_rpc_server_controller.h"
+
+
+#include<google/protobuf/descriptor.h>
+#include<google/protobuf/message.h>
+#include<google/protobuf/service.h>
+
+#define MAX_NOTIFY_TASK_MAX 1024
+
+#include <vector>
+
+
+// notify the proccess cycle do something
+static ngx_connection_t* notify_conn = NULL;
+static std::vector<ngx_notify_queue_t> notify_task;
+ngx_notify_queue_t ngx_rpc_post_start;
+
+
+int ngx_rpc_post_task(ngx_rpc_post_handler_pt callback, void *data)
+{
+    if(notify_task.size() >= MAX_NOTIFY_TASK_MAX)
+    {
+        return NGX_ERROR;
+    }
+
+    ngx_notify_queue_t task = {callback, data};
+    notify_task.push_back(task);
+
+    ngx_int_t signal = 1;
+
+    ::write(notify_conn->fd, (char*)&signal, sizeof(signal));
+
+     return NGX_OK;
+}
+
+static void ngx_event_hanlder_notify_write(ngx_event_t *ev)
+{
+    ngx_log_debug(NGX_LOG_DEBUG_ALL, ev->log, 0, "ngx_event_hanlder_notify_write");
+
+    //do nothing,this should not called;
+
+    if(ngx_rpc_post_start.handler)
+    {
+        ngx_rpc_post_start.handler(ngx_rpc_post_start.ctx);
+    }
+
+    ngx_rpc_post_start.handler = NULL;
+    ngx_rpc_post_start.ctx  = NULL;
+
+    ngx_del_event(ev, NGX_WRITE_EVENT, 0);
+}
+
+
+static void ngx_event_hanlder_notify_read(ngx_event_t *ev)
+{
+    ngx_log_debug(NGX_LOG_DEBUG_ALL, ev->log, 0,"ngx_event_hanlder_notify_read");
+
+    //read and do all the work;
+     ngx_int_t signal = 1;
+
+     int ret = 0;
+     do{
+         ret = ::read(notify_conn->fd, (char*)&signal, sizeof(signal));
+     }while(ret > 0);
+
+     while(!notify_task.empty())
+     {
+          ngx_notify_queue_t task = notify_task.back();
+          notify_task.pop_back();
+          task.handler(task.ctx);
+     }
+
+     //ngx_del_event(ev, NGX_READ_EVENT, 0);
+}
+
+
 
 ngx_int_t ngx_http_rpc_master_init(ngx_cycle_t *cycle)
 {
@@ -39,7 +112,22 @@ ngx_int_t ngx_http_rpc_process_init(ngx_cycle_t *cycle)
     // do some init here
     ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0, "ngx_http_rpc_process_init");
 
+    int event_fd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
+    notify_conn = ngx_get_connection(event_fd, cycle->log);
 
+    notify_conn->pool = cycle->pool;
+
+    notify_conn->read->handler = ngx_event_hanlder_notify_read;
+    notify_conn->read->log = cycle->log;
+
+
+    notify_conn->write->handler = ngx_event_hanlder_notify_write;
+    notify_conn->write->log = cycle->log;
+
+    if( ngx_add_conn(notify_conn) != NGX_OK)
+    {
+        return NGX_ERROR;
+    }
 
     //TODO init the TLS data
     return NGX_OK;
@@ -48,6 +136,11 @@ ngx_int_t ngx_http_rpc_process_init(ngx_cycle_t *cycle)
 void ngx_http_rpc_process_exit(ngx_cycle_t *cycle)
 {
     ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0, "ngx_http_rpc_process_exit");
+
+    ::close(notify_conn->fd);
+    ngx_del_conn(notify_conn, 0);
+    ngx_free_connection(notify_conn);
+
     return;
 }
 

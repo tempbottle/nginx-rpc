@@ -61,6 +61,9 @@ ngx_module_t  ngx_http_rpc_module = {
 
 ngx_int_t ngx_http_rpc_preconfiguration(ngx_conf_t *cf)
 {
+    ngx_log_error(NGX_LOG_INFO, cf->log,
+                  errno, "ngx_http_rpc_preconfiguration ");
+
     return 0;
 }
 
