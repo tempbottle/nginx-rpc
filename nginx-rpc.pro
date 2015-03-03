@@ -279,7 +279,8 @@ SOURCES += thirdparty/tengine/tengine-master/objs/ngx_auto_config.h \
            ngx_rpc_module/ngx_log_cpp.cpp \
            ngx_rpc_module/ngx_rpc_server_controller.cpp \
            ngx_rpc_module/ngx_rpc_buffer.cpp \
-           bench/ngx_client.cpp
+           bench/ngx_client.cpp \
+    thirdparty/tengine/tengine-master/objs/ngx_modules.c
 
 SOURCES += build/ngx_modules.c \
            inspect_server/inspect.pb.cc \
@@ -564,4 +565,7 @@ SOURCES += \
 SOURCES += \
     bench/config \
     ngx_rpc_module/config.make
+
+OTHER_FILES += \
+    test/config
 

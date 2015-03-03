@@ -1,2 +1,8 @@
-NGX_CLIENT_BINS="$NGX_CLIENT_BINS \
-    $ngx_addon_dir/ngx_client.cpp "
+#NGX_CLIENT_BINS="$NGX_CLIENT_BINS \
+#    $ngx_addon_dir/ngx_client.cpp "
+
+ngx_addon_name=ngx_rpc_bench_module
+HTTP_MODULES="$HTTP_MODULES $ngx_addon_name"
+
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
+    $ngx_addon_dir/ngx_client.cpp"

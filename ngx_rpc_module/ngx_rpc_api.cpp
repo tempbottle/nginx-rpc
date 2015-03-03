@@ -49,6 +49,7 @@ static void ngx_event_hanlder_notify_write(ngx_event_t *ev)
 
     //do nothing,this should not called;
 
+
     if(ngx_rpc_post_start.handler)
     {
         ngx_rpc_post_start.handler(ngx_rpc_post_start.ctx);
@@ -89,7 +90,7 @@ ngx_int_t ngx_http_rpc_master_init(ngx_cycle_t *cycle)
 {
     set_cache_log(cycle->log);
 
-    ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0, "ngx_http_rpc_process_init log done");
+    ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log, 0, "ngx_http_rpc_master_init log done");
 
     for(int i=0; all_rpc_services[i]; ++i)
     {

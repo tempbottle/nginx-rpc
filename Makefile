@@ -11,8 +11,6 @@ NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
 install: thirdparty/tengine/tengine-master/Makefile
 	rm -f release/logs/*
 	make -j$(NPROCS) -C thirdparty/tengine/tengine-master
-	make -C thirdparty/tengine/tengine-master -f objs/Makefile objs/libnginx.a
-	make -C thirdparty/tengine/tengine-master -f objs/Makefile objs/ngx_client
 	make -j$(NPROCS) -C thirdparty/tengine/tengine-master install
 
 

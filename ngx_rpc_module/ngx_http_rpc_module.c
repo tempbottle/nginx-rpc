@@ -32,7 +32,7 @@ static ngx_http_module_t  ngx_http_rpc_module_ctx = {
     NULL,                /* create main configuration */
     NULL,                /* init main configuration */
 
-    NULL,                /* create server configuration */
+    ngx_http_soap_sub_create_srv_conf,                /* create server configuration */
     NULL,                /* merge server configuration */
 
     NULL,                /* create location configuration */
