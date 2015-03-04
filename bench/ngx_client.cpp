@@ -1,5 +1,14 @@
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <errno.h>
+#include <stddef.h>
+#include <string.h>
 
 #include <sys/eventfd.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "ngx_rpc_module/ngx_rpc_api.h"
 
@@ -123,7 +132,7 @@ static ngx_int_t ngx_rpc_bench_subrequest_post_handler(ngx_http_request_t *r, vo
      ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                  "subrequest r->headers_out.status:%d rc:%d", r->headers_out.status, rc);
 
-     r->write_event_handler = ngx_rpc_bench_parent_handler;
+     pr->write_event_handler = ngx_rpc_bench_parent_handler;
 
      // the data in pr->out
     return NGX_OK;
@@ -134,11 +143,8 @@ void bench(void *param)
 {
     ngx_log_debug(NGX_LOG_DEBUG_ALL, ngx_cycle->log, 0, "this from bench");
 
-    int sockfd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
-
-
     // int socket
-    ngx_connection_t *c = ngx_get_connection(sockfd, ngx_cycle->log);
+    ngx_connection_t *c = ngx_get_connection(1, ngx_cycle->log);
     c->pool = ngx_create_pool(1024, ngx_cycle->log);
     c->log = (ngx_log_t*)ngx_palloc(c->pool, sizeof(ngx_log_t));
     *(c->log) =  *(ngx_cycle->log);
@@ -189,17 +195,23 @@ void bench(void *param)
     c->data  = r;
 
 
+
      // start subrequest
      ngx_http_post_subrequest_t *psr = (ngx_http_post_subrequest_t *)
              ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
 
      psr->handler = ngx_rpc_bench_subrequest_post_handler;
      psr->data = NULL;
+
+
      r->request_body =  (ngx_http_request_body_t *)ngx_palloc(r->pool, sizeof(ngx_http_request_body_t));
-     r->request_body->bufs = (ngx_chain_t*)ngx_palloc(r->pool, sizeof(ngx_chain_t));
+     r->request_body->bufs = NULL;
+     //(ngx_chain_t*)ngx_palloc(r->pool, sizeof(ngx_chain_t));
+     r->request_body->buf =NULL;
 
 
-     ngx_str_t path = ngx_string("/");
+
+     ngx_str_t path = ngx_string("/hehe");
 
      ngx_http_request_t *sr;
      ngx_int_t rc = ngx_http_subrequest(r, &path, NULL, &sr, psr, NGX_HTTP_SUBREQUEST_IN_MEMORY);
@@ -208,8 +220,6 @@ void bench(void *param)
                  "ngx_http_subrequest rc:%d", rc);
 
      sr->write_event_handler(sr);
-     //ngx_http_process_request(sr);
-     //ngx_http_finalize_request(r, NGX_OK);
 }
 
 /// this must be called when moudule init done
