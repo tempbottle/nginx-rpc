@@ -20,7 +20,8 @@ INCLUDEPATH += . \
                thirdparty/tengine/tengine-master/modules/ngx_http_lua_module/src/api \
                thirdparty/tengine/tengine-master/src/http/modules/perl \
                thirdparty/tengine/tengine-master/src/http/modules/tfs \
-               thirdparty/tengine/tengine-master/objs
+               thirdparty/tengine/tengine-master/objs \
+               thirdparty/protobuf/4.9/include
 
 # Input
 SOURCES += thirdparty/tengine/tengine-master/objs/ngx_auto_config.h \
@@ -280,7 +281,9 @@ SOURCES += thirdparty/tengine/tengine-master/objs/ngx_auto_config.h \
            ngx_rpc_module/ngx_rpc_server_controller.cpp \
            ngx_rpc_module/ngx_rpc_buffer.cpp \
            bench/ngx_client.cpp \
-    thirdparty/tengine/tengine-master/objs/ngx_modules.c
+    thirdparty/tengine/tengine-master/objs/ngx_modules.c \
+    ngx_rpc_plugin/ngx_rpc_generator.cpp \
+    ngx_rpc_plugin/ngx_rpc_plugin.cpp
 
 SOURCES += build/ngx_modules.c \
            inspect_server/inspect.pb.cc \
@@ -566,6 +569,9 @@ SOURCES += \
     bench/config \
     ngx_rpc_module/config.make
 
-OTHER_FILES += \
+SOURCES += \
     test/config
+
+SOURCES += \
+    ngx_rpc_plugin/ngx_rpc_generator.h
 

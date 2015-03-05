@@ -35,7 +35,16 @@ thirdparty/tengine/tengine-master/Makefile: thirdparty/tengine/tengine-master/co
         --add-module=$(PWD)/bench \
         --add-module=$(PWD)/inspect_server
 
+plugin: ngx_rpc_plugin/ngx_rpc_plugin.o  ngx_rpc_plugin/ngx_rpc_generator.o
+	g++ -o ngx_rpc_plugin/plugin ngx_rpc_plugin/ngx_rpc_generator.o ngx_rpc_plugin/ngx_rpc_plugin.o \
+		-Lthirdparty/protobuf/4.9/lib  -lprotoc -lprotobuf -lpthread -lrt
 
+
+ngx_rpc_plugin/ngx_rpc_generator.o : ngx_rpc_plugin/ngx_rpc_generator.cpp 
+	g++ -c -std=c++11 -o ngx_rpc_plugin/ngx_rpc_generator.o -Ithirdparty/protobuf/4.9/include ngx_rpc_plugin/ngx_rpc_generator.cpp
+
+ngx_rpc_plugin/ngx_rpc_plugin.o : ngx_rpc_plugin/ngx_rpc_plugin.cpp 
+	g++ -c -o ngx_rpc_plugin/ngx_rpc_plugin.o -Ithirdparty/protobuf/4.9/include ngx_rpc_plugin/ngx_rpc_plugin.cpp
 
 #        --add-module=$(PWD)/test \
 #        --add-module=$(PWD)/rpc_proc

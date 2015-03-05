@@ -143,8 +143,9 @@ void bench(void *param)
 {
     ngx_log_debug(NGX_LOG_DEBUG_ALL, ngx_cycle->log, 0, "this from bench");
 
+    int sockfd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
     // int socket
-    ngx_connection_t *c = ngx_get_connection(1, ngx_cycle->log);
+    ngx_connection_t *c = ngx_get_connection(sockfd, ngx_cycle->log);
     c->pool = ngx_create_pool(1024, ngx_cycle->log);
     c->log = (ngx_log_t*)ngx_palloc(c->pool, sizeof(ngx_log_t));
     *(c->log) =  *(ngx_cycle->log);
