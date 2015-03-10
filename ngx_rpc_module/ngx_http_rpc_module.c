@@ -24,6 +24,7 @@ static ngx_command_t  ngx_http_rpc_module_commands[] = {
     ngx_null_command
 };
 
+
 /* Modules */
 static ngx_http_module_t  ngx_http_rpc_module_ctx = {
     ngx_http_rpc_preconfiguration, /* preconfiguration */

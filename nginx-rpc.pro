@@ -573,5 +573,14 @@ SOURCES += \
     test/config
 
 SOURCES += \
-    ngx_rpc_plugin/ngx_rpc_generator.h
+    ngx_rpc_plugin/ngx_rpc_generator.h \
+    ngx_rpc/ngx_rpc_client.cpp \
+    ngx_rpc/ngx_rpc_process.cpp \
+    ngx_rpc/ngx_rpc_client.h \
+    ngx_rpc/ngx_rpc_queue.h \
+    ngx_rpc/ngx_rpc_queue.cpp \
+    ngx_rpc/ngx_rpc_process.h \
+    ngx_rpc/ngx_rpc_dispatcher.h \
+    ngx_rpc/ngx_rpc_dispatcher.cpp
+
 

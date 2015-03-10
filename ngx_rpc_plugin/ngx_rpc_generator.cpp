@@ -60,7 +60,12 @@ bool NginxRpcGenerator::Generate(const google::protobuf::FileDescriptor *file,
 
     //std::cerr<<"file:"<<file_name<<std::endl;
 
-    Insert(context, file_name+".pbh", "includes", GetHeaderServices(file));
+    //1 create the dir
+
+    //2 create the ngx_rpc_header
+
+    //3 create the ngx_rpc_header
+    Insert(context, file_name+".h", "includes", GetHeaderServices(file));
     //Insert(context, "hehe.pb.h", "namespace_scope", GetHeaderServices(file));
     return true;
 }
