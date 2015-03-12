@@ -27,8 +27,6 @@ INCLUDEPATH += . \
 SOURCES += thirdparty/tengine/tengine-master/objs/ngx_auto_config.h \
            thirdparty/tengine/tengine-master/objs/ngx_auto_headers.h \
            thirdparty/tengine/tengine-master/objs/ngx_shared_config.h \
-           inspect_server/inspect.pb.h \
-           inspect_server/inspect_server_impl.h \
            ngx_rpc_module/ngx_log_cpp.h \
            ngx_rpc_module/ngx_rpc_api.h \
            ngx_rpc_module/ngx_rpc_client_impl.h \
@@ -286,8 +284,18 @@ SOURCES += thirdparty/tengine/tengine-master/objs/ngx_auto_config.h \
     ngx_rpc_plugin/ngx_rpc_plugin.cpp
 
 SOURCES += build/ngx_modules.c \
+           inspect_server/inspect_application.conf \
+           inspect_server/config \
+           inspect_server/inspect_application_module.cpp \
            inspect_server/inspect.pb.cc \
-           inspect_server/inspect_server_impl.cpp \
+           inspect_server/inspect_application_impl.cpp \
+           inspect_server/inspect.proto \
+           inspect_server/inspect.pb.h \
+           inspect_server/inspect_application_impl.h \
+           inspect_server/ngx_rpc_client.cpp \
+           inspect_server/ngx_rpc_client.h \
+           inspect_server/ngx_rpc_server.cpp \
+           inspect_server/ngx_rpc_server.h \
            ngx_rpc_module/ngx_http_rpc_module.c \
            ngx_rpc_module/ngx_rpc_api.cpp \
            ngx_rpc_module/ngx_rpc_router.cpp \

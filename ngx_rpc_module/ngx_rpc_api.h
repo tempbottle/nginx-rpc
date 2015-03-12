@@ -16,10 +16,12 @@ extern "C" {
 
 
 // associate the http request
-typedef struct ngx_http_rpc_ctx_t
+typedef struct
 {
+    void *sub_req_ctx;
 
-} ngx_http_rpc_ctx;
+
+} ngx_http_rpc_ctx_t;
 
 
 

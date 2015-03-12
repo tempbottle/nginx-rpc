@@ -1,12 +1,15 @@
 #add rpc_server
+ngx_addon_name="inspect"
 
+HTTP_MODULES="$HTTP_MODULES ngx_http_inspect_application_module "
+
+#file name with lowwer case
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
     $ngx_addon_dir/inspect.pb.cc \
-    $ngx_addon_dir/inspect_server_impl.cpp"
+    $ngx_addon_dir/inspect_application_module.cpp \
+    $ngx_addon_dir/inspect_application_impl.cpp "
 
 CORE_LIBS="$CORE_LIBS"
 
-NGX_CLIENT_SRCS="$NGX_CLIENT_SRCS \
-    $ngx_addon_dir/inspect.pb.cc \
-    $ngx_addon_dir/inspect_server_impl.cpp"
+
 
