@@ -70,6 +70,16 @@ public:
     {
     }
 
+    int setHeader()
+    {
+        return 0;
+    }
+
+    int getHeader()
+    {
+        return 0;
+    }
+
     static void finish_request(RpcChannel *channel,
                                const ::google::protobuf::Message* req,
                                const ::google::protobuf::Message* res,
@@ -120,7 +130,8 @@ public:
 
          r->write_event_handler = sub_req_ctx->pre_write_event_handler;
 
-        sub_req_ctx->handler(sub_req_ctx->channel, sub_req_ctx->req, sub_req_ctx->res, r->headers_out.status);
+        sub_req_ctx->handler(sub_req_ctx->channel, sub_req_ctx->req,
+                             sub_req_ctx->res, r->headers_out.status);
     }
 
 

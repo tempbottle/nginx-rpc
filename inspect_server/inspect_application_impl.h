@@ -11,27 +11,25 @@ namespace ngxrpc { namespace inspect {
 
 
 
-
 class ApplicationServer
 {
 public:
-
-
-     void interface(RpcChannel *channel,const ::ngxrpc::inspect::Request* request,
+     void interface(RpcChannel *channel,
+                    const ::ngxrpc::inspect::Request* request,
                     ::ngxrpc::inspect::Response* response,
                     RpcCallHandler hanlder)
      {
-
          // TODO your process
          hanlder(channel, request, response, NGX_OK);
      }
 
-     void requeststatus(RpcChannel *channel,const ::ngxrpc::inspect::Request* request,
-                        ::ngxrpc::inspect::Response* response,
-                        RpcCallHandler hanlder)
+     void requeststatus(RpcChannel *channel,
+                     const ::ngxrpc::inspect::Request* request,
+                     ::ngxrpc::inspect::Response* response,
+                     RpcCallHandler hanlder)
      {
          // TODO your process
-         hanlder(channel ,request, response, NGX_OK);
+         hanlder(channel, request, response, NGX_OK);
      }
 
 

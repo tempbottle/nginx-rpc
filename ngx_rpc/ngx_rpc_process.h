@@ -1,7 +1,6 @@
 #ifndef _ngx_proc_rpcESS_H_
 #define _ngx_proc_rpcESS_H_
 
-#include "ngx_rpc_queue.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,19 +16,51 @@ extern "C" {
 /// \param cf
 /// \return
 
+#define  CACAHE_LINESIZE 64
+// sysconf (_SC_LEVEL1_DCACHE_LINESIZE)
+typedef void(*ngx_task_hanlder)(void * );
+
+
+#define NGX_RPC_TASK_INIT 0
+#define NGX_RPC_TASK_SUBREQUST_INIT  1
+#define NGX_RPC_TASK_SUBREQUST_DONE -1
+#define NGX_RPC_TASK_DONE -1
+
+typedef struct {
+    ngx_chain_t req_bufs;
+    ngx_chain_t res_bufs;
+    ngx_task_hanlder hander;
+    int response_states;
+} ngx_rpc_task_t;
+
+
+#define MAX_RPC_CALL_NUM  2
+#define MAX_PENDING_LEVEL 5
+
+
+typedef struct
+{
+    ngx_rpc_task_t task[MAX_RPC_CALL_NUM];
+    int sp;
+
+    ngx_http_request_t *r;
+    ngx_slab_pool_t *shpool;
+    ngx_rpc_call_t *pending;
+    ngx_shmtx_t shm_lock;
+
+} ngx_rpc_call_t;
 
 
 typedef struct {
+
     ngx_shmtx_t  *sem;
     int idx;
     ngx_rpc_call_t *shm_call; // if call is null
+    int eventfd; // use a nofity
+    ngx_slab_pool_t *shpool;
 
-    ngx_queue_t next_idle;
-
-    int(*run_task)(ngx_rpc_call_t* shm_call);
-    int(*init_task)(ngx_rpc_call_t* shm_call);
-    int(*destory_task)(ngx_rpc_call_t* shm_call);
-
+    ngx_rpc_call_t* pending;
+    ngx_atomic_t pendingnum;
 } ngx_proc_rpc_process_t;
 
 
@@ -37,12 +68,10 @@ typedef struct {
     ngx_proc_rpc_process_t* procs;
     ngx_atomic_t procs_count;
 
-    ngx_queue_t idle;
+    ngx_queue_t idle[MAX_PENDING_LEVEL];
     ngx_shmtx_t lock;
 
-    int(*pop_idle)(ngx_proc_rpc_process_t** proc);
-    int(*push_idle)(ngx_proc_rpc_process_t* proc);
-    int(*destory_task)(ngx_proc_rpc_process_t* shm_call);
+
 } ngx_proc_pool_t;
 
 
@@ -50,6 +79,8 @@ static void *ngx_proc_rpc_create_conf(ngx_conf_t *cf);
 
 typedef struct {
     ngx_str_t rpc_proc_conf_file_path;
+    int cacheline
+    
 } ngx_proc_rpc_conf_t;
 
 
@@ -138,6 +169,8 @@ ngx_proc_rpc_prepare(ngx_cycle_t *cycle)
 
     ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log ,"ngx_proc_rpc_prepare:%x",pbcf);
 
+    // add a event fd to epoll
+
     return NGX_OK;
 }
 
@@ -158,14 +191,10 @@ ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
 static ngx_int_t
 ngx_proc_rpc_loop(ngx_cycle_t *cycle)
 {
-    ngx_log_error(NGX_LOG_EMERG, cycle->log, 0, "daytime %V",
-                  &ngx_cached_http_time);
-
-    // lock
-
-    // do
-
-    // unlock
+    //ngx_log_error(NGX_LOG_EMERG, cycle->log, 0, "daytime %V",
+    //              &ngx_cached_http_time);
+    
+    
 
     return NGX_OK;
 }

@@ -29,10 +29,6 @@ SOURCES += thirdparty/tengine/tengine-master/objs/ngx_auto_config.h \
            thirdparty/tengine/tengine-master/objs/ngx_shared_config.h \
            ngx_rpc_module/ngx_log_cpp.h \
            ngx_rpc_module/ngx_rpc_api.h \
-           ngx_rpc_module/ngx_rpc_client_impl.h \
-           ngx_rpc_module/ngx_rpc_router.h \
-           ngx_rpc_module/ngx_rpc_server_impl.h \
-           ngx_rpc_module/ngx_rpc_server_list.h \
            thirdparty/tengine/tengine-master/src/core/nginx.h \
            thirdparty/tengine/tengine-master/src/core/ngx_array.h \
            thirdparty/tengine/tengine-master/src/core/ngx_buf.h \
@@ -276,7 +272,6 @@ SOURCES += thirdparty/tengine/tengine-master/objs/ngx_auto_config.h \
            thirdparty/protobuf/4.9/include/google/protobuf/compiler/python/python_generator.h \
            thirdparty/protobuf/4.9/include/google/protobuf/compiler/ruby/ruby_generator.h \
            ngx_rpc_module/ngx_log_cpp.cpp \
-           ngx_rpc_module/ngx_rpc_server_controller.cpp \
            ngx_rpc_module/ngx_rpc_buffer.cpp \
            bench/ngx_client.cpp \
     thirdparty/tengine/tengine-master/objs/ngx_modules.c \
@@ -288,18 +283,13 @@ SOURCES += build/ngx_modules.c \
            inspect_server/config \
            inspect_server/inspect_application_module.cpp \
            inspect_server/inspect.pb.cc \
-           inspect_server/inspect_application_impl.cpp \
            inspect_server/inspect.proto \
            inspect_server/inspect.pb.h \
            inspect_server/inspect_application_impl.h \
-           inspect_server/ngx_rpc_client.cpp \
-           inspect_server/ngx_rpc_client.h \
            inspect_server/ngx_rpc_server.cpp \
            inspect_server/ngx_rpc_server.h \
            ngx_rpc_module/ngx_http_rpc_module.c \
            ngx_rpc_module/ngx_rpc_api.cpp \
-           ngx_rpc_module/ngx_rpc_router.cpp \
-           ngx_rpc_module/ngx_rpc_server_list.cpp \
            test/ngx_core_test_case_module.c \
            test/test_fork.cpp \
            thirdparty/tengine/tengine-master/src/core/nginx.c \
@@ -567,8 +557,7 @@ SOURCES += \
     Makefile \
     inspect_server/config
 
-SOURCES += \
-    ngx_rpc_module/ngx_rpc_server_controller.h
+SOURCES +=
 
 SOURCES += \
     ngx_rpc_module/ngx_rpc_buffer.h
@@ -582,13 +571,7 @@ SOURCES += \
 
 SOURCES += \
     ngx_rpc_plugin/ngx_rpc_generator.h \
-    ngx_rpc/ngx_rpc_client.cpp \
     ngx_rpc/ngx_rpc_process.cpp \
-    ngx_rpc/ngx_rpc_client.h \
-    ngx_rpc/ngx_rpc_queue.h \
-    ngx_rpc/ngx_rpc_queue.cpp \
-    ngx_rpc/ngx_rpc_process.h \
-    ngx_rpc/ngx_rpc_dispatcher.h \
-    ngx_rpc/ngx_rpc_dispatcher.cpp
+    ngx_rpc/ngx_rpc_process.h
 
 
