@@ -248,5 +248,13 @@ public:
     ngx_http_request_t* r;
 };
 
+
+class RpcAsynChannel  {
+
+
+public:
+      RpcChannel *channel;
+};
+
 #endif
 

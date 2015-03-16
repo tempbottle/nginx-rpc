@@ -276,7 +276,9 @@ SOURCES += thirdparty/tengine/tengine-master/objs/ngx_auto_config.h \
            bench/ngx_client.cpp \
     thirdparty/tengine/tengine-master/objs/ngx_modules.c \
     ngx_rpc_plugin/ngx_rpc_generator.cpp \
-    ngx_rpc_plugin/ngx_rpc_plugin.cpp
+    ngx_rpc_plugin/ngx_rpc_plugin.cpp \
+    ngx_rpc/ngx_rpc_queue.cpp \
+    ngx_rpc/ngx_http_rpc.cpp
 
 SOURCES += build/ngx_modules.c \
            inspect_server/inspect_application.conf \
@@ -573,5 +575,9 @@ SOURCES += \
     ngx_rpc_plugin/ngx_rpc_generator.h \
     ngx_rpc/ngx_rpc_process.cpp \
     ngx_rpc/ngx_rpc_process.h
+
+SOURCES += \
+    ngx_rpc/ngx_rpc_queue.h \
+    ngx_rpc/ngx_http_rpc.h
 
 

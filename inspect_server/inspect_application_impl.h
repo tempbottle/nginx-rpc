@@ -2,7 +2,7 @@
 #define INSPECT_SERVER_IMPL_H
 
 #include "inspect.pb.h"
-#include "ngx_rpc_server.h"
+
 
 
 /// simple is better

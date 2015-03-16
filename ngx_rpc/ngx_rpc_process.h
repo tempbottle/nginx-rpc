@@ -1,6 +1,7 @@
 #ifndef _ngx_proc_rpcESS_H_
 #define _ngx_proc_rpcESS_H_
-
+#include "ngx_log_cpp.h"
+#include "ngx_rpc_queue.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,6 +46,7 @@ typedef struct
 
     ngx_http_request_t *r;
     ngx_slab_pool_t *shpool;
+
     ngx_rpc_call_t *pending;
     ngx_shmtx_t shm_lock;
 
@@ -53,63 +55,118 @@ typedef struct
 
 typedef struct {
 
-    ngx_shmtx_t  *sem;
-    int idx;
-    ngx_rpc_call_t *shm_call; // if call is null
-    int eventfd; // use a nofity
     ngx_slab_pool_t *shpool;
+    ngx_rpc_queue_t *queue;
+    ngx_rpc_notify_t notify;
 
-    ngx_rpc_call_t* pending;
-    ngx_atomic_t pendingnum;
 } ngx_proc_rpc_process_t;
 
 
+
+// every process has its memery
 typedef struct {
-    ngx_proc_rpc_process_t* procs;
-    ngx_atomic_t procs_count;
-
-    ngx_queue_t idle[MAX_PENDING_LEVEL];
-    ngx_shmtx_t lock;
-
-
-} ngx_proc_pool_t;
-
-
-static void *ngx_proc_rpc_create_conf(ngx_conf_t *cf);
-
-typedef struct {
-    ngx_str_t rpc_proc_conf_file_path;
-    int cacheline
-    
+    uint64_t shm_size;
+    ngx_slab_pool_t *shpool;
+    ngx_proc_rpc_process_t * process;
 } ngx_proc_rpc_conf_t;
 
+static ngx_int_t ngx_proc_rpc_init_zone(ngx_shm_zone_t *shm_zone, void *data)
+{
+    ngx_proc_rpc_conf_t       *ctx, *octx;
+
+    octx = data;
+    ctx = shm_zone->data;
+
+    if (octx != NULL) {
+        if (ctx->shm_size !=  octx->shm_size) {
+            ngx_log_error(NGX_LOG_EMERG, shm_zone->shm.log, 0,
+                          "reqstat \"%V\" uses the value str \"%d\" "
+                          "while previously it used \"%d\"",
+                          &shm_zone->shm.name, ctx->shm_size, octx->shm_size);
+            return NGX_ERROR;
+        }
+
+        ctx->shpool = octx->shpool;
+        ctx->process = octx->process;
+        return NGX_OK;
+    }
+
+    ctx->shpool = (ngx_slab_pool_t *) shm_zone->shm.addr;
+    ctx->shpool->data = ctx;
+
+    return NGX_OK;
+}
+
+
+// in master?
+static char * ngx_proc_rpc_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+
+    ngx_proc_rpc_conf_t *c = ( ngx_proc_rpc_conf_t *) conf;
+
+    ngx_str_t  *value = cf->args->elts;
+    ssize_t size = ngx_parse_size(&value[1]);
+
+    if (size == NGX_ERROR) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid zone size \"%V\"", &value[3]);
+        return NGX_CONF_ERROR;
+    }
+
+    if (size < (ssize_t) (8 * ngx_pagesize)) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "zone \"%V\" is too small", &value[1]);
+        return NGX_CONF_ERROR;
+    }
+
+    static ngx_str_t rpc_shm_name = ngx_string("ngx_proc_rpc");
+
+    ngx_shm_zone_t *shm_zone = ngx_shared_memory_add(cf, &rpc_shm_name, size,
+                &ngx_proc_rpc_module);
+
+    shm_zone->init = ngx_proc_rpc_init_zone;
+    shm_zone->data = c;
+
+   return NGX_CONF_OK;
+
+}
 
 static ngx_command_t ngx_proc_rpc_commands[] = {
 
-    { ngx_string("rpc_proc_conf_file_path"),
+    { ngx_string("ngx_proc_rpc_shm_size"),
       NGX_PROC_CONF|NGX_CONF_TAKE1,
-      ngx_conf_set_str_slot,
+      ngx_proc_rpc_set_shm_size,
       NGX_PROC_CONF_OFFSET,
-      offsetof(ngx_proc_rpc_conf_t, rpc_proc_conf_file_path),
+      0,
       NULL },
 
-      ngx_null_command
+    ngx_null_command
 };
 
-
+static void *ngx_proc_rpc_create_conf(ngx_conf_t *cf);
 
 static ngx_proc_module_t ngx_proc_rpc_module_ctx = {
     ngx_string("ngx_proc_rpc"),
     NULL,
     NULL,
     ngx_proc_rpc_create_conf,
-    ngx_proc_rpc_merge_conf,
-    ngx_proc_rpc_prepare,
-    ngx_proc_rpc_process_init,
-    ngx_proc_rpc_loop,
-    ngx_proc_rpc_exit_process
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
 };
 
+
+
+
+static ngx_int_t ngx_proc_rpc_master_init(ngx_cycle_t *cycle);
+static void      ngx_proc_rpc_master_exit(ngx_cycle_t *cycle);
+
+static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle);
+static void      ngx_proc_rpc_process_exit(ngx_cycle_t *cycle);
+
+static void     ngx_proc_rpc_notify_reader(void * data);
 
 ngx_module_t ngx_proc_rpc_module = {
     NGX_MODULE_V1,
@@ -117,138 +174,80 @@ ngx_module_t ngx_proc_rpc_module = {
     ngx_proc_rpc_commands,
     NGX_PROC_MODULE,
     NULL,
+    ngx_proc_rpc_master_init,
+    ngx_proc_rpc_process_init,
     NULL,
     NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
+    ngx_proc_rpc_process_exit,
+    ngx_proc_rpc_master_exit,
     NGX_MODULE_V1_PADDING
 };
 
+#ifdef __cplusplus
+}
+#endif
 
-static void *
-ngx_proc_rpc_create_conf(ngx_conf_t *cf)
+static void *ngx_proc_rpc_create_conf(ngx_conf_t *cf)
 {
-    ngx_proc_rpc_conf_t  *pbcf;
 
-    pbcf = ngx_pcalloc(cf->pool, sizeof(ngx_proc_rpc_conf_t));
+    ngx_proc_rpc_conf_t * conf = ngx_pcalloc(cf->pool, sizeof(ngx_proc_rpc_conf_t));
 
-    if (pbcf == NULL) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "daytime create proc conf error");
+    if(NULL == conf)
+    {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf->log, 0,
+                           "ngx_proc_rpc_create_conf error");
         return NULL;
     }
 
-    pbcf->rpc_proc_conf_file_path.data = NULL;
-    pbcf->rpc_proc_conf_file_path.len = 0;
+    conf->shm_size = NGX_CONF_UNSET_UINT;
+    conf->process = NULL;
+    conf->shpool  = NULL;
 
-    return pbcf;
+    return  conf;
+}
+
+static ngx_int_t ngx_proc_rpc_master_init(ngx_cycle_t *cycle)
+{
+    // 1 init the shm
+    INFO("ngx_http_inspect_application_master_init");
+    return 0;
 }
 
 
-static char *
-ngx_proc_rpc_merge_conf(ngx_conf_t *cf, void *parent, void *child)
+static void  ngx_proc_rpc_master_exit(ngx_cycle_t *cycle)
 {
-    ngx_proc_rpc_conf_t  *prev = parent;
-    ngx_proc_rpc_conf_t  *conf = child;
 
-    ngx_str_t  rpc_conf=ngx_string("ngx_rpc.conf");
-    ngx_conf_merge_str_value(conf, prev, rpc_conf);
-
-    return NGX_CONF_OK;
+    INFO("ngx_http_inspect_application_master_init");
+    return 0;
 }
 
-
-static ngx_int_t
-ngx_proc_rpc_prepare(ngx_cycle_t *cycle)
-{
-    ngx_proc_rpc_conf_t  *pbcf;
-
-    pbcf = ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
-
-    ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log ,"ngx_proc_rpc_prepare:%x",pbcf);
-
-    // add a event fd to epoll
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
+static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
 {
 
-    ngx_log_debug(NGX_LOG_DEBUG_ALL, cycle->log ,"ngx_proc_rpc_process_init cycle:%x",cycle);
+    ngx_proc_rpc_conf_t * conf =  ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
 
-    // add to event
+    conf->process = ngx_slab_alloc_locked(conf->shpool, sizeof(ngx_proc_rpc_process_t));
+    conf->process->shpool = conf->shpool;
+    conf->process->queue = ngx_http_rpc_task_queue;
 
-
-    return NGX_OK;
-}
-
-
-static ngx_int_t
-ngx_proc_rpc_loop(ngx_cycle_t *cycle)
-{
-    //ngx_log_error(NGX_LOG_EMERG, cycle->log, 0, "daytime %V",
-    //              &ngx_cached_http_time);
-    
-    
-
-    return NGX_OK;
-}
-
-
-static void
-ngx_proc_rpc_exit_process(ngx_cycle_t *cycle)
-{
-    ngx_proc_rpc_conf_t *pbcf;
-
-    pbcf = ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
-
-    ngx_close_socket(pbcf->fd);
-}
-
-
-static void
-ngx_proc_rpc_accept(ngx_event_t *ev)
-{
-    u_char             sa[NGX_SOCKADDRLEN], buf[256], *p;
-    socklen_t          socklen;
-    ngx_socket_t       s;
-    ngx_connection_t  *lc;
-
-    socklen = NGX_SOCKADDRLEN;
-    lc = ev->data;
-
-    s = accept(lc->fd, (struct sockaddr *) sa, &socklen);
-    if (s == -1) {
-        return;
+    // this is every procss
+    if(0 != ngx_rpc_notify_create( &conf->process->notify, cycle, conf->shpool))
+    {
+        return NGX_ERROR;
     }
 
-    if (ngx_nonblocking(s) == -1) {
-        goto finish;
-    }
-
-    /*
-      Daytime Protocol
-
-      http://tools.ietf.org/html/rfc867
-
-      Weekday, Month Day, Year Time-Zone
-    */
-    p = ngx_sprintf(buf, "%s, %s, %d, %d, %d:%d:%d-%s",
-                    week[ngx_cached_tm->tm_wday],
-                    months[ngx_cached_tm->tm_mon],
-                    ngx_cached_tm->tm_mday, ngx_cached_tm->tm_year,
-                    ngx_cached_tm->tm_hour, ngx_cached_tm->tm_min,
-                    ngx_cached_tm->tm_sec, ngx_cached_tm->tm_zone);
-
-    ngx_write_fd(s, buf, p - buf);
-
-finish:
-    ngx_close_socket(s);
+    return 0;
 }
+
+static void  ngx_proc_rpc_process_exit(ngx_cycle_t *cycle)
+{
+    // do nothing ?
+
+    ngx_proc_rpc_conf_t * conf =  ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
+
+    ngx_rpc_notify_destory(&conf->process->notify);
+    INFO("ngx_proc_rpc_process_exit");
+}
+
 
 #endif

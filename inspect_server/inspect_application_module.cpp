@@ -192,7 +192,13 @@ static void ngx_http_inspect_application_async_request(void* cn)
 
 }
 
-static void ngx_http_inspect_application_post_handler(ngx_http_request_t *r)
+
+static void ngx_http_inspect_application_post_sync_handler(ngx_http_request_t *r)
+{
+
+
+}
+static void ngx_http_inspect_application_post_sync_handler(ngx_http_request_t *r)
 {
     if(r->request_body == NULL
             || r->request_body->bufs == NULL)
@@ -203,13 +209,14 @@ static void ngx_http_inspect_application_post_handler(ngx_http_request_t *r)
     }
 
 
+
     ngx_http_inspect_application_ctx_t *ctx =
             ( ngx_http_inspect_application_ctx_t *)ngx_http_get_module_ctx(r, ngx_http_inspect_application_module);
 
     if(0 == strncasecmp("/ngxrpc.inspect.Application",r->uri.data,r->uri.len)
             || 0 == strncasecmp("/ngxrpc/inspect/Application",r->uri.data,r->uri.len) )
     {
-
+        impl
 
     }
 
@@ -278,21 +285,22 @@ static void ngx_http_inspect_application_http_handler(ngx_http_request_t *r)
             return;
         }
 
-        NgxRpcController * cntl =  new NgxRpcController(r);
-        ctx->cntl =cntl;
-
-        ngx_pool_cleanup_t * cln = ngx_pool_cleanup_add(r->pool, 0);
-        cln->handler = NgxRpcController::clean_up_crontller;
-        cln->data = ctx->cntl;
+        RpcChannel * cntl =  new RpcChannel(r);
+        ctx->cntl = cntl;
 
         //TODO init the ctx here
         ngx_http_set_ctx(r, ctx, ngx_http_inspect_application_module);
     }
 
+    ngx_http_inspect_application_conf_t *conf = ngx_http_get_module_loc_conf(r, ngx_http_inspect_application_conf_t);
+
+
+
+    ngx_http_client_body_handler_pt p = conf->async ? ngx_http_inspect_application_post_async_handler :
+                                                      ngx_http_inspect_application_post_sync_handler;
 
     // 3 forward the post handler
-    ngx_int_t rc = ngx_http_read_client_request_body(r,
-                                                     ngx_http_inspect_application_post_handler);
+    ngx_int_t rc = ngx_http_read_client_request_body(r, p);
 
     if (rc >=  NGX_HTTP_SPECIAL_RESPONSE)
     {
