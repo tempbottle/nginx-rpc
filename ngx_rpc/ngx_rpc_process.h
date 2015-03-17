@@ -17,41 +17,6 @@ extern "C" {
 /// \param cf
 /// \return
 
-#define  CACAHE_LINESIZE 64
-// sysconf (_SC_LEVEL1_DCACHE_LINESIZE)
-typedef void(*ngx_task_hanlder)(void * );
-
-
-#define NGX_RPC_TASK_INIT 0
-#define NGX_RPC_TASK_SUBREQUST_INIT  1
-#define NGX_RPC_TASK_SUBREQUST_DONE -1
-#define NGX_RPC_TASK_DONE -1
-
-typedef struct {
-    ngx_chain_t req_bufs;
-    ngx_chain_t res_bufs;
-    ngx_task_hanlder hander;
-    int response_states;
-} ngx_rpc_task_t;
-
-
-#define MAX_RPC_CALL_NUM  2
-#define MAX_PENDING_LEVEL 5
-
-
-typedef struct
-{
-    ngx_rpc_task_t task[MAX_RPC_CALL_NUM];
-    int sp;
-
-    ngx_http_request_t *r;
-    ngx_slab_pool_t *shpool;
-
-    ngx_rpc_call_t *pending;
-    ngx_shmtx_t shm_lock;
-
-} ngx_rpc_call_t;
-
 
 typedef struct {
 
@@ -142,6 +107,8 @@ static ngx_command_t ngx_proc_rpc_commands[] = {
 
     ngx_null_command
 };
+
+
 
 static void *ngx_proc_rpc_create_conf(ngx_conf_t *cf);
 

@@ -40,7 +40,7 @@ typedef struct {
 
 
 ///
-int ngx_rpc_queue_create(ngx_rpc_queue_t **queue, ngx_cycle_t * cycle);
+int ngx_rpc_queue_create(ngx_rpc_queue_t **queue, ngx_cycle_t * cycle, ngx_slab_pool_t * shpool);
 
 int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue);
 

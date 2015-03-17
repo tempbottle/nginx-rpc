@@ -1,8 +1,26 @@
 
 #include "ngx_rpc_queue.h"
 
-int ngx_rpc_queue_create(ngx_rpc_queue_t **queue, ngx_cycle_t * cycle)
+int ngx_rpc_queue_create(ngx_rpc_queue_t **queue, ngx_cycle_t * cycle, ngx_slab_pool_t *shpool,uint64_t radio)
 {
+
+    ngx_rpc_queue_t *q = ngx_slab_alloc_locked(shpool, sizeof(ngx_rpc_queue_t));
+    *queue = q;
+
+     for( q->capacity = 1,radio = radio* (ngx_ncpu + 1);
+          radio > 0;
+          radio >> 1, q->capacity << 1);
+
+
+     q->process_num = ngx_ncpu;
+     q->log = cycle->log;
+
+     q->pool = shpool;
+
+     q->size = q->readidx = q->writeidx = 0;
+     q->elems = ngx_slab_alloc_locked(shpool,q->capacity *sizeof(task_elem_t) );
+
+     memset(q->elems, 0, q->capacity *sizeof(task_elem_t));
 
 }
 

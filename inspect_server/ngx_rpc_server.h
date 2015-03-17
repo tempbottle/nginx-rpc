@@ -249,12 +249,7 @@ public:
 };
 
 
-class RpcAsynChannel  {
 
-
-public:
-      RpcChannel *channel;
-};
 
 #endif
 
