@@ -1,11 +1,9 @@
 #ifndef _ngx_proc_rpcESS_H_
 #define _ngx_proc_rpcESS_H_
-#include "ngx_log_cpp.h"
+
+#include <stdint.h>
 #include "ngx_rpc_queue.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include <ngx_config.h>
 #include <ngx_core.h>
@@ -127,8 +125,6 @@ static ngx_proc_module_t ngx_proc_rpc_module_ctx = {
 
 
 
-static ngx_int_t ngx_proc_rpc_master_init(ngx_cycle_t *cycle);
-static void      ngx_proc_rpc_master_exit(ngx_cycle_t *cycle);
 
 static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle);
 static void      ngx_proc_rpc_process_exit(ngx_cycle_t *cycle);
@@ -141,18 +137,16 @@ ngx_module_t ngx_proc_rpc_module = {
     ngx_proc_rpc_commands,
     NGX_PROC_MODULE,
     NULL,
-    ngx_proc_rpc_master_init,
+    NULL,
     ngx_proc_rpc_process_init,
     NULL,
     NULL,
     ngx_proc_rpc_process_exit,
-    ngx_proc_rpc_master_exit,
+    NULL,
     NGX_MODULE_V1_PADDING
 };
 
-#ifdef __cplusplus
-}
-#endif
+
 
 static void *ngx_proc_rpc_create_conf(ngx_conf_t *cf)
 {
@@ -173,35 +167,55 @@ static void *ngx_proc_rpc_create_conf(ngx_conf_t *cf)
     return  conf;
 }
 
-static ngx_int_t ngx_proc_rpc_master_init(ngx_cycle_t *cycle)
-{
-    // 1 init the shm
-    INFO("ngx_http_inspect_application_master_init");
+
+static ngx_int_t ngx_proc_rpc_wait_task(void * proc, void *task){
+
     return 0;
 }
 
+static ngx_int_t ngx_proc_rpc_notify_task(void * proc, void *task){
 
-static void  ngx_proc_rpc_master_exit(ngx_cycle_t *cycle)
+    ngx_proc_rpc_process_t *p = (ngx_proc_rpc_process_t *) proc;
+    ngx_rpc_notify_task(p->notify, ngx_proc_rpc_process_task, task);
+    return 0;
+}
+
+static ngx_int_t ngx_proc_rpc_process_task(void * proc)
 {
 
-    INFO("ngx_http_inspect_application_master_init");
+    ngx_proc_rpc_process_t *p= (ngx_proc_rpc_process_t *)proc;
+
+    void * task =NULL;
+
+    ngx_rpc_pop_task_block(p->queue, &task, proc);
+
+    if(task)
+    {
+        ngx_rpc_task_t * t = (ngx_rpc_task_t*)task;
+        t->process_hander(t);
+        t->next_hander(t);
+    }
+
     return 0;
 }
 
 static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
 {
 
-    ngx_proc_rpc_conf_t * conf =  ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
+    ngx_proc_rpc_conf_t * conf = ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
 
     conf->process = ngx_slab_alloc_locked(conf->shpool, sizeof(ngx_proc_rpc_process_t));
     conf->process->shpool = conf->shpool;
     conf->process->queue = ngx_http_rpc_task_queue;
 
     // this is every procss
-    if(0 != ngx_rpc_notify_create( &conf->process->notify, cycle, conf->shpool))
+    if(0 != ngx_rpc_notify_create(&conf->process->notify, cycle, conf->shpool))
     {
         return NGX_ERROR;
     }
+
+    conf->process->notify.read_hanlder = ngx_proc_rpc_process_task;
+    conf->process->notify.ctx = conf->process;
 
     return 0;
 }
@@ -213,7 +227,7 @@ static void  ngx_proc_rpc_process_exit(ngx_cycle_t *cycle)
     ngx_proc_rpc_conf_t * conf =  ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
 
     ngx_rpc_notify_destory(&conf->process->notify);
-    INFO("ngx_proc_rpc_process_exit");
+
 }
 
 

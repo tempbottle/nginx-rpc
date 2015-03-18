@@ -1,17 +1,11 @@
-
 #include "ngx_rpc_queue.h"
 
-int ngx_rpc_queue_create(ngx_rpc_queue_t **queue, ngx_cycle_t * cycle, ngx_slab_pool_t *shpool,uint64_t radio)
+int ngx_rpc_queue_create(ngx_rpc_queue_t **queue, ngx_slab_pool_t *shpool, int max_elem)
 {
 
     ngx_rpc_queue_t *q = ngx_slab_alloc_locked(shpool, sizeof(ngx_rpc_queue_t));
     *queue = q;
-
-     for( q->capacity = 1,radio = radio* (ngx_ncpu + 1);
-          radio > 0;
-          radio >> 1, q->capacity << 1);
-
-
+     q->capacity = max_elem;
      q->process_num = ngx_ncpu;
      q->log = cycle->log;
 
@@ -31,7 +25,7 @@ int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue)
 }
 
 
-bool ngx_rpc_push_task(ngx_rpc_queue_t *queue, void* task, void *proc)
+bool ngx_rpc_push_task(ngx_rpc_queue_t *queue, void* task)
 {
     uint64_t left = queue->capacity - queue->size;
 
@@ -61,7 +55,7 @@ bool ngx_rpc_push_task(ngx_rpc_queue_t *queue, void* task, void *proc)
             ngx_sched_yield();
         }
 
-        queue->process(pre_task & (~NGX_READ_FLAG), task);
+        queue->notify(pre_task & (~NGX_READ_FLAG), task);
         return true;
     }
 
@@ -104,7 +98,6 @@ void  ngx_rpc_pop_task_block(ngx_rpc_queue_t *queue, void** task, void *proc)
             }
 
             ngx_atomic_fetch_add(queue->size, -1);
-            queue->process(proc,  pre_task & (~NGX_WRITE_FLAG));
             return;
         }
 

@@ -28,7 +28,6 @@ SOURCES += thirdparty/tengine/tengine-master/objs/ngx_auto_config.h \
            thirdparty/tengine/tengine-master/objs/ngx_auto_headers.h \
            thirdparty/tengine/tengine-master/objs/ngx_shared_config.h \
            ngx_rpc_module/ngx_log_cpp.h \
-           ngx_rpc_module/ngx_rpc_api.h \
            thirdparty/tengine/tengine-master/src/core/nginx.h \
            thirdparty/tengine/tengine-master/src/core/ngx_array.h \
            thirdparty/tengine/tengine-master/src/core/ngx_buf.h \
@@ -277,9 +276,10 @@ SOURCES += thirdparty/tengine/tengine-master/objs/ngx_auto_config.h \
     thirdparty/tengine/tengine-master/objs/ngx_modules.c \
     ngx_rpc_plugin/ngx_rpc_generator.cpp \
     ngx_rpc_plugin/ngx_rpc_plugin.cpp \
-    ngx_rpc/ngx_rpc_queue.cpp \
-    ngx_rpc/ngx_http_rpc.cpp \
-    inspect_server/ngx_http_inspect_module.cpp
+    inspect_server/ngx_http_inspect_module.cpp \
+    ngx_rpc/ngx_http_rpc.c \
+    ngx_rpc/ngx_rpc_queue.c \
+    ngx_rpc/ngx_rpc_process.c
 
 SOURCES += build/ngx_modules.c \
            inspect_server/config \
@@ -289,7 +289,6 @@ SOURCES += build/ngx_modules.c \
            inspect_server/ngx_rpc_server.cpp \
            inspect_server/ngx_rpc_server.h \
            ngx_rpc_module/ngx_http_rpc_module.c \
-           ngx_rpc_module/ngx_rpc_api.cpp \
            test/ngx_core_test_case_module.c \
            test/test_fork.cpp \
            thirdparty/tengine/tengine-master/src/core/nginx.c \
@@ -571,17 +570,16 @@ SOURCES += \
 
 SOURCES += \
     ngx_rpc_plugin/ngx_rpc_generator.h \
-    ngx_rpc/ngx_rpc_process.cpp \
     ngx_rpc/ngx_rpc_process.h
 
 SOURCES += \
     ngx_rpc/ngx_rpc_queue.h \
     ngx_rpc/ngx_http_rpc.h
 
-HEADERS += \
+SOURCES += \
     inspect_server/inspect_impl.h
 
-OTHER_FILES += \
+SOURCES += \
     inspect_server/inspect.conf
 
 

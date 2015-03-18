@@ -70,12 +70,29 @@ public:
     {
     }
 
-    int setHeader()
+    static void destructor(void *p)
+    {
+        RpcChannel *tp = (RpcChannel*)p;
+        delete tp;
+    }
+
+    int setRequestHeader()
     {
         return 0;
     }
 
-    int getHeader()
+    int getRequestHeader()
+    {
+        return 0;
+    }
+
+
+    int setResponseHeader()
+    {
+        return 0;
+    }
+
+    int getResponseHeader()
     {
         return 0;
     }
@@ -130,6 +147,7 @@ public:
 
          r->write_event_handler = sub_req_ctx->pre_write_event_handler;
 
+         // dispath
         sub_req_ctx->handler(sub_req_ctx->channel, sub_req_ctx->req,
                              sub_req_ctx->res, r->headers_out.status);
     }
@@ -191,7 +209,7 @@ public:
     void sub_request(const std::string& path,
                      const ::google::protobuf::Message* req,
                      ::google::protobuf::Message* res,
-                     RpcCallHandler handler)
+                     RpcCallHandler done)
     {
 
 

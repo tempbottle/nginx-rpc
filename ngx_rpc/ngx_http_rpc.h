@@ -1,9 +1,6 @@
 #include "ngx_log_cpp.h"
 #include "ngx_rpc_queue.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include <ngx_config.h>
 #include <ngx_core.h>
@@ -14,38 +11,6 @@ extern "C" {
 
 #define  CACAHE_LINESIZE 64
 // sysconf (_SC_LEVEL1_DCACHE_LINESIZE)
-typedef void(*ngx_task_hanlder)(void * );
-
-
-#define NGX_RPC_TASK_INIT 0
-#define NGX_RPC_TASK_SUBREQUST_INIT  1
-#define NGX_RPC_TASK_SUBREQUST_DONE -1
-#define NGX_RPC_TASK_DONE -1
-
-typedef struct {
-    ngx_chain_t req_bufs;
-    ngx_chain_t res_bufs;
-    ngx_task_hanlder hander;
-    void * ctx;
-    int response_states;
-} ngx_rpc_task_t;
-
-
-#define MAX_RPC_CALL_NUM  2
-#define MAX_PENDING_LEVEL 5
-
-
-typedef struct
-{
-    ngx_rpc_task_t task[MAX_RPC_CALL_NUM];
-    int sp;
-
-    ngx_http_request_t *r;
-    ngx_slab_pool_t *shpool;
-    pending;
-    ngx_shmtx_t shm_lock;
-
-} ngx_rpc_call_t;
 
 
 typedef struct
@@ -61,32 +26,11 @@ typedef struct
     uint64_t shm_size;
     ngx_slab_pool_t *shpool;
     ngx_rpc_queue_t *queue;
-
+    ngx_rpc_notify_t *notify;
 
 } ngx_http_rpc_conf_t;
 
 
-
-ngx_int_t ngx_http_rpc_master_init(ngx_cycle_t *cycle)
-{
-
-}
-
-
-void      ngx_http_rpc_master_exit(ngx_cycle_t *cycle)
-{
-
-}
-
-ngx_int_t ngx_http_rpc_process_init(ngx_cycle_t *cycle){
-
-
-}
-
-void      ngx_http_rpc_process_exit(ngx_cycle_t *cycle)
-{
-
-}
 
 static ngx_int_t ngx_proc_rpc_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 {
@@ -169,6 +113,24 @@ static ngx_command_t  ngx_http_rpc_module_commands[] = {
 };
 
 
+static void*  ngx_http_rpc_create_loc_conf(ngx_conf_t *cf)
+{
+    ngx_http_rpc_conf_t *conf = (ngx_http_rpc_conf_t *)
+            ngx_pcalloc(cf->pool,sizeof(ngx_http_rpc_conf_t));
+
+    if(conf == NULL)
+    {
+        ERROR("ngx_http_inspect_conf_t create failed");
+        return NULL;
+    }
+
+    conf->max_request_cpu_radio = NGX_CONF_UNSET_UINT;
+    conf->shm_size = NGX_CONF_UNSET_UINT;
+    conf->shpool = NULL;
+    conf->queue = NULL;
+
+    return conf;
+}
 
 
 /* Modules */
@@ -195,12 +157,12 @@ ngx_module_t  ngx_http_rpc_module = {
     NULL,                                  /* init master */
     /// there no where called init_master
     /// but some where called init module instead
-    ngx_http_rpc_master_init,              /* init module */
-    ngx_http_rpc_process_init,             /* init process */
+    NULL,              /* init module */
+    NULL,             /* init process */
     NULL,                                  /* init thread */
     NULL,                                  /* exit thread */
-    ngx_http_rpc_process_exit,             /* exit process */
-    ngx_http_rpc_master_exit,             /* exit master */
+    NULL,             /* exit process */
+    NULL,             /* exit master */
     NGX_MODULE_V1_PADDING
 };
 
