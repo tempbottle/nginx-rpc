@@ -1,7 +1,7 @@
 #ifndef _NGX_RPC_BUFFER_H_
 #define _NGX_RPC_BUFFER_H_
 
-#include "ngx_rpc_api.h"
+
 #include "google/protobuf/message.h"
 #include "google/protobuf/io/zero_copy_stream.h"
 
