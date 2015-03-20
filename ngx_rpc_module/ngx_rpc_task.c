@@ -14,6 +14,8 @@ ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *pool, void *ctx)
 
     memset(task, 0, sizeof(task));
 
+    task->ctx = ctx;
+
     task->init_time_ms = ngx_current_msec;
     task->time_out_ms  = ngx_current_msec + ctx->timeout_ms;
 

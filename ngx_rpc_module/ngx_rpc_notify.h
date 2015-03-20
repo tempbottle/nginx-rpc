@@ -30,6 +30,7 @@ typedef struct {
 
     // pending task
     ngx_queue_t task;
+    ngx_shmtx_sh_t psh;
     ngx_shmtx_t lock_task;
 
     void(*read_hanlder)(void* );

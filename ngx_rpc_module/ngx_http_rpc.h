@@ -19,10 +19,21 @@
 typedef struct
 {
     ngx_slab_pool_t  *shpool;
+    ngx_rpc_queue_t  *queue;
+    ngx_rpc_notify_t *notify;
+
+
     ngx_http_request_t *r;
+    void* r_ctx;
+
+    ngx_shmtx_sh_t psh;
+    ngx_shmtx_t task_lock;
 
     ngx_queue_t appendtask;
-    ngx_shmtx_t task_lock;
+
+
+
+    ngx_rpc_task_t *pre_task;
 
     uint64_t timeout_ms;
 

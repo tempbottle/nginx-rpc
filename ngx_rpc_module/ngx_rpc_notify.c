@@ -1,117 +1,4 @@
-#include "ngx_rpc_queue.h"
-
-int ngx_rpc_queue_create(ngx_rpc_queue_t **queue, ngx_slab_pool_t *shpool, int max_elem)
-{
-
-    ngx_rpc_queue_t *q = ngx_slab_alloc_locked(shpool, sizeof(ngx_rpc_queue_t));
-    *queue = q;
-     q->capacity = max_elem;
-     q->process_num = ngx_ncpu;
-     q->log = cycle->log;
-
-     q->pool = shpool;
-
-     q->size = q->readidx = q->writeidx = 0;
-     q->elems = ngx_slab_alloc_locked(shpool,q->capacity *sizeof(task_elem_t) );
-
-     memset(q->elems, 0, q->capacity *sizeof(task_elem_t));
-
-}
-
-int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue)
-{
-
-
-}
-
-
-bool ngx_rpc_push_task(ngx_rpc_queue_t *queue, void* task)
-{
-    uint64_t left = queue->capacity - queue->size;
-
-    // left more than process
-    if(left <= queue->process_num)
-    {
-        return false;
-    }
-
-    uint64_t pre_write = ngx_atomic_fetch_add(queue->writeidx , 1);
-
-    task_elem_t * tmp = &(queue->elems[pre_write]);
-
-    void* pre_task = ngx_atomic_swap_set(tmp->task, task | NGX_WRITE_FLAG);
-
-    if(pre_task == NULL)
-    {
-        ngx_atomic_fetch_add(queue->size, NULL);
-        return true;
-    }
-
-    if(pre_task & NGX_READ_FLAG)
-    {
-
-        while(!ngx_atomic_cmp_set(tmp->task, task | NGX_WRITE_FLAG, NULL))
-        {
-            ngx_sched_yield();
-        }
-
-        queue->notify(pre_task & (~NGX_READ_FLAG), task);
-        return true;
-    }
-
-    // only one write do the current cell
-    //assert((pre_task & 0x1) == false);
-
-    while(! ngx_atomic_cmp_set(tmp, task | NGX_WRITE_FLAG, pre_task))
-    {
-        //ngx_sched_yield();
-    }
-
-    // there has a pre task,restore
-    return false;
-}
-
-
-void  ngx_rpc_pop_task_block(ngx_rpc_queue_t *queue, void** task, void *proc)
-{
-    for(;;)
-    {
-        uint64_t pre_read = ngx_atomic_fetch_add(queue->readidx, 1);
-
-        task_elem_t *tmp = &(queue->elems[pre_read]);
-
-        void* pre_task = ngx_atomic_swap_set(tmp->task, proc | NGX_READ_FLAG);
-
-        // no task
-        if(pre_task == NULL)
-        {
-            queue->wait(proc, task);
-            return;
-        }
-
-        // pre just set
-        if(pre_task & NGX_WRITE_FLAG)
-        {
-            while(!ngx_atomic_cmp_set(tmp->task, proc | NGX_READ_FLAG, NULL))
-            {
-                ngx_sched_yield();
-            }
-
-            ngx_atomic_fetch_add(queue->size, -1);
-            return;
-        }
-
-
-        //this cell task not process done , resotre
-        while(! ngx_atomic_cmp_set(tmp, task | NGX_WRITE_FLAG, pre_task))
-        {
-            ngx_sched_yield();
-        }
-
-    }
-}
-
-
+#include "ngx_rpc_notify.h"
 
 
 void ngx_rpc_nofiy_default_hanlder(void*){}
@@ -164,6 +51,17 @@ ngx_rpc_notify_t *ngx_rpc_notify_create(ngx_slab_pool_t *shpool , void *ctx)
 
      notify->read_hanlder = ngx_rpc_nofiy_default_hanlder;
      notify->write_hanlder = ngx_rpc_nofiy_default_hanlder;
+
+     if(ngx_shmtx_create(&rpc_ctx->task_lock, &rpc_ctx->shpool, NULL) != NGX_OK)
+     {
+         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                       "ngx_palloc error size:%d",
+                       sizeof(ngx_http_inspect_ctx_t));
+
+         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+         return;
+     }
+
 
      if( ngx_add_conn(notify->notify_conn) != NGX_OK)
      {

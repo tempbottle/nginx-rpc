@@ -28,7 +28,8 @@ typedef enum {
 
 typedef struct {
     //task stack
-    ngx_queue_t next;
+    void* ctx;
+    ngx_queue_t node;
 
     // for sub request
     const char *path;
