@@ -1,11 +1,9 @@
-
 // C
 //extern "C" {
-    #include "ngx_http_rpc.h"
+#include "ngx_http_rpc.h"
 //}
 
-// common header
-#include "ngx_rpc_buffer.h"
+
 
 // for rpc server header
 #include "inspect_impl.h"
@@ -18,12 +16,13 @@ typedef struct {
     ngxrpc::inspect::ApplicationServer* application_impl;
 } ngx_http_inspect_ctx_t;
 
+
 typedef struct
 {
-     uint64_t timeout_ms;
-     ngxrpc::inspect::ApplicationServer* application_impl;
+    uint64_t timeout_ms;
+    ngxrpc::inspect::ApplicationServer* application_impl;
 
-     // other servers go here
+    // other servers go here
 } ngx_http_inspect_conf_t;
 
 
@@ -72,7 +71,6 @@ static void ngx_inspect_process_exit(ngx_cycle_t* cycle);
 
 extern "C" {
 
-
 ngx_module_t ngx_http_inspect_module = {
     NGX_MODULE_V1,
     &ngx_http_inspect_module_ctx,              /* module context */
@@ -85,8 +83,8 @@ ngx_module_t ngx_http_inspect_module = {
     NULL,             /* init process */
     NULL,             /* init thread */
     NULL,             /* exit thread */
-    ngx_inspect_process_exit,             /* exit process */
-    NULL,             /* exit master */
+    ngx_inspect_process_exit, /* exit process */
+    NULL,                     /* exit master */
     NGX_MODULE_V1_PADDING
 };
 
@@ -120,7 +118,9 @@ static char *ngx_inspect_application_init(ngx_conf_t *cf, ngx_command_t *cmd, vo
     // Add some init
 
 
-    ngx_http_core_loc_conf_t *clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
+    ngx_http_core_loc_conf_t *clcf =
+            ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
+
     clcf->handler = ngx_http_inspect_http_handler;
 
     return NGX_OK;
@@ -184,11 +184,11 @@ static ngx_rpc_task_t* ngx_http_inspect_application_interface_handler(ngx_http_r
 static ngx_rpc_task_t*  ngx_http_inspect_application_requeststatus_handler(ngx_http_request_t *r, ngx_rpc_task_t *pre, ngx_rpc_task_t *task)
 {
 
-     // pop
+    // pop
 
-     // done
+    // done
 
-     // push next , forward
+    // push next , forward
 }
 
 
@@ -196,7 +196,7 @@ static ngx_rpc_task_t*  ngx_http_inspect_application_requeststatus_handler(ngx_h
 static void ngx_http_inspect_application_subrequest_parent(ngx_http_inspect_ctx_t *ctx, ngx_rpc_task_t *task)
 {
 
-     // dispath next
+    // dispath next
 }
 
 
@@ -222,13 +222,13 @@ static void ngx_http_inspect_application_subrequest_begin(ngx_http_inspect_ctx_t
 static void ngx_http_inspect_application_notify_done_handler(ngx_http_inspect_ctx_t *ctx, ngx_rpc_task_t *pre, )
 {
 
-     // on notify
+    // on notify
 
-     // pop nofity task
+    // pop nofity task
 
-     // set event write hanler
+    // set event write hanler
 
-     //  result the parent handler ?
+    //  result the parent handler ?
 }
 
 
@@ -250,7 +250,7 @@ static void ngx_http_rpc_proccess_task(void *c)
 
     if(next == NULL)
     {
-         //termiot
+        //termiot
         return;
     }
 
@@ -276,11 +276,13 @@ static void ngx_http_rpc_proccess_task(void *c)
 
 static void ngx_http_inspect_dispatcher_task(ngx_http_rpc_ctx_t *ctx, ngx_rpc_task_t* task){
 
-
     // 1 push the task into queue head
     ngx_shmtx_lock(&ctx->task_lock);
-    ngx_queue_insert_after(&ctx->appendtask, &task->node);
-    ngx_shmtx_unlock(&ctx->task_lock);
+
+    ngx_queue_insert_after(&ctx->pending, &task->pending);
+
+    ngx_shmtx_lock(&ctx->task_lock);
+
 
     // 2 do or foward
     switch (task->type) {
@@ -306,48 +308,47 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
         return;
     }
 
-    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
+    ngx_http_rpc_conf_t *rpc_conf = (ngx_http_rpc_conf_t *)
             ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
-
-    // 1 new process task
-    ngx_rpc_task_t* task = ngx_http_rpc_task_create(rpc_ctx->shpool, rpc_ctx);
-    ngx_pool_cleanup_t *p1 = ngx_pool_cleanup_add(r->connection->pool, 0);
-    p1->data = task;
-    p1->handler = ngx_http_rpc_task_destory;
-
-    // 2 copy the request
-    ngx_chain_t* req_chain = &task->req_bufs;
-
-    for(ngx_chain_t* c= r->request_body->bufs; c; c=c->next )
-    {
-        int buf_size = c->buf->last - c->buf->pos;
-        req_chain->buf = (ngx_buf_t*)ngx_slab_alloc_locked(ctx->shpool, sizeof(ngx_buf_t));
-        memcpy(c->buf, req_chain->buf,sizeof(ngx_buf_t));
-        req_chain->buf->pos = req_chain->buf->start = (u_char*) ngx_slab_alloc_locked(ctx->shpool,buf_size);
-        memcpy(c->buf->pos, req_chain->buf->pos,buf_size);
-        req_chain->next = (ngx_chain_t*)ngx_slab_alloc_locked(ctx->shpool, sizeof(ngx_chain_t));
-        req_chain = req_chain->next;
-        req_chain->next = NULL;
-    }
+    ngx_rpc_task_t *task = ngx_http_rpc_post_request_task_init(r, rpc_conf);
 
     // router use hash
-    if(0 == strncasecmp("/ngxrpc.inspect.Application.interface", r->uri.data, r->uri.len)
-            || 0 == strncasecmp("/ngxrpc/inspect/Application.interface", r->uri.data, r->uri.len))
+    if(0 == strncasecmp("/ngxrpc.inspect.application.interface",
+                        r->uri.data, r->uri.len))
+    {
+            task->filter = ngx_http_inspect_application_interface_handler;
+            task->type   = PROCESS_IN_PROC;
+    }
+
+    if(0 == strncasecmp("/ngxrpc/inspect/application.interface",
+                        r->uri.data, r->uri.len))
     {
         task->filter = ngx_http_inspect_application_interface_handler;
         task->type   = PROCESS_IN_PROC;
-    }else  if(0 == strncasecmp("/ngxrpc.inspect.Application.requeststatus", r->uri.data, r->uri.len)
-              || 0 == strncasecmp("/ngxrpc/inspect/Application/requeststatus", r->uri.data, r->uri.len))
+    }
+
+    if(0 == strncasecmp("/ngxrpc.inspect.application.requeststatus",
+                        r->uri.data, r->uri.len))
     {
-        task->process_hander = ngx_http_inspect_application_requeststatus_handler;
-        task->type  = PROCESS_IN_PROC;
-    }else{
+        task->filter = ngx_http_inspect_application_requeststatus_handler;
+        task->type  = PROCESS_IN_SUBREQUEST;
+    }
+
+    if(0 == strncasecmp("/ngxrpc/inspect/application/requeststatus",
+                        r->uri.data, r->uri.len))
+    {
+        task->filter = ngx_http_inspect_application_requeststatus_handler;
+        task->type  = PROCESS_IN_SUBREQUEST;
+    }
+
+    if(task->filter == NULL )
+    {
         ngx_http_finalize_request(r, NGX_HTTP_NOT_FOUND);
         return;
     }
 
     // 2 dispatch task
-    ngx_http_inspect_dispatcher_task(task);
+    ngx_http_inspect_dispatcher_task(rpc_conf, task);
 }
 
 static void ngx_http_inspect_http_handler(ngx_http_request_t *r)
@@ -360,9 +361,6 @@ static void ngx_http_inspect_http_handler(ngx_http_request_t *r)
             ngx_http_conf_get_module_loc_conf(r, ngx_http_inspect_module);
 
     ngx_http_rpc_conf_t *rpc_conf = (ngx_http_rpc_conf_t *)
-            ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
-
-    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
             ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
 
     if(inspect_ctx == NULL)
@@ -389,49 +387,17 @@ static void ngx_http_inspect_http_handler(ngx_http_request_t *r)
         inspect_ctx->cntl = cntl;
         inspect_ctx->application_impl = inspect_conf->application_impl;
         ngx_http_set_ctx(r, inspect_ctx, ngx_http_inspect_module);
+
+        rpc_ctx->r_ctx = inspect_ctx;
     }
 
+
+    ngx_http_rpc_ctx_t *rpc_ctx =(ngx_http_rpc_ctx_t *)
+            ngx_http_get_module_ctx(r, ngx_http_rpc_module);
     if (rpc_ctx == NULL)
     {
-        rpc_ctx = (ngx_http_rpc_ctx_t *)
-                ngx_slab_alloc_locked(rpc_conf->shpool, sizeof(ngx_http_rpc_ctx_t));
-
-        if(rpc_ctx == NULL)
-        {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "ngx_palloc error size:%d",
-                          sizeof(ngx_http_inspect_ctx_t));
-
-            ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-            return;
-        }
-
-        ngx_pool_cleanup_t *p1 = ngx_pool_cleanup_add(r->connection->pool, 0);
-        p1->data = rpc_ctx;
-        p1->handler = ngx_http_rpc_ctx_free;
-
-        rpc_ctx->shpool = rpc_conf->shpool;
-        rpc_ctx->queue  = rpc_conf->queue;
-        rpc_ctx->notify = rpc_conf->notify;
-
-        rpc_ctx->r = r;
-        rpc_ctx->r_ctx = inspect_ctx;
-
-        ngx_queue_init(&rpc_ctx->appendtask);
-
-        if(ngx_shmtx_create(&rpc_ctx->task_lock, &rpc_ctx->shpool, NULL) != NGX_OK)
-        {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "ngx_palloc error size:%d",
-                          sizeof(ngx_http_inspect_ctx_t));
-
-            ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-            return;
-        }
-
-
+        rpc_ctx = ngx_http_rpc_ctx_init(r, inspect_ctx);
         rpc_ctx->timeout_ms = inspect_conf->timeout_ms + ngx_current_msec;
-        ngx_http_set_ctx(r, rpc_ctx, ngx_http_rpc_module);
     }
 
     // 2 forward to the post handler

@@ -6,8 +6,8 @@
 
 struct ngx_rpc_task_t;
 
-// next = filter(ctx, pre, task)
-typedef void* (*ngx_task_filter)(void*ctx, ngx_rpc_task_t* pre, ngx_rpc_task_t* task);
+// next = filter(ctx, task, pres)
+typedef void* (*ngx_task_filter)(void* ctx, ngx_rpc_task_t* task, ngx_rpc_task_t* sp);
 
 
 // http key value
@@ -25,11 +25,21 @@ typedef enum {
    PROCESS_IN_SUBREQUEST = 2,
 } task_type_t;
 
+typedef enum {
+   TASK_INIT          = 0,
+   TASK_PROCING       = 1,
+   TASK_DONE          = 2,
+} task_status_t;
+
+
+#define MAX_PRE_TASK_NUM 4
 
 typedef struct {
-    //task stack
+    //task stack ,
     void* ctx;
-    ngx_queue_t node;
+
+    ngx_queue_t pending;
+    ngx_queue_t done;
 
     // for sub request
     const char *path;
@@ -40,7 +50,6 @@ typedef struct {
     ngx_chain_t res_bufs;
 
     ngx_task_filter filter;
-    task_type_t type;
 
     // mertics
     int response_states;
@@ -48,7 +57,12 @@ typedef struct {
     int time_out_ms;
     int done_ms;
 
+    // for destory
+    volatile ngx_uint_t refcount;
     ngx_slab_pool_t *pool;
+
+    task_type_t type:4;
+    task_status_t status:4;
 
 } ngx_rpc_task_t;
 
@@ -61,5 +75,14 @@ typedef struct {
 ngx_rpc_task_t * ngx_http_rpc_task_create(ngx_slab_pool_t *pool, void *ctx);
 
 void ngx_http_rpc_task_destory(ngx_rpc_task_t *t);
+
+#define ngx_http_rpc_task_ref_add(t) \
+    ngx_atomic_fetch_add(t->refcount, 1)
+
+#define ngx_http_rpc_task_ref_sub(t) \
+    if(0 == ngx_atomic_fetch_add(t->refcount, -1)) \
+         ngx_http_rpc_task_destory(t);
+
+extern  ngx_rbtree_node_t sentinel;
 
 #endif

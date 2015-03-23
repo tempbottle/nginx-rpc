@@ -25,8 +25,8 @@ typedef struct {
 
     ngx_slab_pool_t *shpool;
 
-    ngx_connection_t* notify_conn;
-    int eventf_fd;
+    ngx_connection_t *notify_conn;
+    int event_fd;
 
     // pending task
     ngx_queue_t task;

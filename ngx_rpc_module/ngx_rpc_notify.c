@@ -1,3 +1,5 @@
+#include <sys/eventfd.h>
+
 #include "ngx_rpc_notify.h"
 
 
@@ -34,34 +36,29 @@ static void ngx_event_hanlder_notify_write(ngx_event_t *ev)
 ngx_rpc_notify_t *ngx_rpc_notify_create(ngx_slab_pool_t *shpool , void *ctx)
 {
 
+    ngx_rpc_notify_t *notify = ngx_slab_alloc_locked(shpool, sizeof(ngx_rpc_notify_t));
 
      notify->ctx = ctx;
      notify->event_fd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
      notify->notify_conn = ngx_get_connection(notify->eventf_fd, cycle->log);
 
 
-     notify->notify_conn->pool = cycle->pool;
+     notify->notify_conn->pool = NULL;
      notify->notify_conn->read->handler = ngx_rpc_nofiy_read_handler;
-     notify->notify_conn->read->log = cycle->log;
+     notify->notify_conn->read->log = NULL;
      notify->notify_conn->read->data = notify;
 
      notify->notify_conn->write->handler = ngx_event_hanlder_notify_write;
-     notify->notify_conn->write->log = cycle->log;
+     notify->notify_conn->write->log = NULL;
      notify->notify_conn->write->data = notify;
 
      notify->read_hanlder = ngx_rpc_nofiy_default_hanlder;
      notify->write_hanlder = ngx_rpc_nofiy_default_hanlder;
 
-     if(ngx_shmtx_create(&rpc_ctx->task_lock, &rpc_ctx->shpool, NULL) != NGX_OK)
+     if(ngx_shmtx_create(&notify->lock_task, &notify->psh, NULL) != NGX_OK)
      {
-         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                       "ngx_palloc error size:%d",
-                       sizeof(ngx_http_inspect_ctx_t));
-
-         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-         return;
+         return NULL;
      }
-
 
      if( ngx_add_conn(notify->notify_conn) != NGX_OK)
      {
@@ -78,7 +75,7 @@ ngx_rpc_notify_t *ngx_rpc_notify_create(ngx_slab_pool_t *shpool , void *ctx)
 int ngx_rpc_notify_destory(ngx_rpc_notify_t* notify)
 {
     ngx_del_conn(notify->notify_conn);
-    ::close(notify->eventf_fd);
+    ::close(notify->event_fd);
     notify->notify_conn->pool = NULL;
     ngx_free_connection(notify->notify_conn);
 
@@ -87,7 +84,8 @@ int ngx_rpc_notify_destory(ngx_rpc_notify_t* notify)
 int ngx_rpc_notify_task(ngx_rpc_notify_t* notify, void(*hanlder)(void*), void* data)
 {
 
-    ngx_rpc_notify_task_t *  t = ngx_slab_alloc_locked(notify->shpool, sizeof(ngx_rpc_notify_task_t));
+    ngx_rpc_notify_task_t * t = ngx_slab_alloc_locked(notify->shpool, sizeof(ngx_rpc_notify_task_t));
+
     t->hanlder = hanlder;
     t->ctx = data;
 
@@ -96,7 +94,7 @@ int ngx_rpc_notify_task(ngx_rpc_notify_t* notify, void(*hanlder)(void*), void* d
     ngx_shmtx_unlock(&notify->lock_task);
 
     ngx_int_t signal = 1;
-    ::write(notify->eventf_fd, (char*)&signal, sizeof(signal));
+    ::write(notify->event_fd, (char*)&signal, sizeof(signal));
 
     return NGX_OK;
 }

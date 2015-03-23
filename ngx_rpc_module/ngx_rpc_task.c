@@ -1,5 +1,7 @@
 #include "ngx_rpc_task.h"
 
+extern  ngx_rbtree_node_t sentinel;
+
 ////
 /// \brief ngx_http_rpc_task_create
 /// \param pool
@@ -41,6 +43,6 @@ void ngx_http_rpc_task_destory(ngx_rpc_task_t *t){
     // free res_bufs
 
     // free task
-
 }
+
 
