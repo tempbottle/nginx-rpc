@@ -1,6 +1,9 @@
 #ifndef _NGX_RPC_BUFFER_H_
 #define _NGX_RPC_BUFFER_H_
 
+extern "C" {
+#include "ngx_core.h"
+}
 
 #include "google/protobuf/message.h"
 #include "google/protobuf/io/zero_copy_stream.h"
@@ -51,6 +54,32 @@ public:
     unsigned int default_size;
 
 };
+
+
+class NgxShmChainBufferWriter :
+        public ::google::protobuf::io::ZeroCopyOutputStream
+{
+public:
+    NgxShmChainBufferWriter(ngx_chain_t& ch, ngx_slab_pool_t *p,unsigned int ex = 1);
+
+    virtual bool Next(void** data, int* size);
+
+    virtual void BackUp(int count);
+
+    virtual ::google::protobuf::int64 ByteCount() const { return totaly;}
+
+public:
+    ngx_chain_t *chain;
+    ngx_slab_pool_t* pool;
+
+    u_char* cur_pos;
+    unsigned int totaly;
+
+    unsigned int extends;
+    unsigned int default_size;
+
+};
+
 
 
 #endif

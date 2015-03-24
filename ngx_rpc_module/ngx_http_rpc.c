@@ -64,22 +64,20 @@ ngx_module_t  ngx_http_rpc_module = {
 
 ///// Done task
 ///
-#define ngx_http_cycle_get_module_loc_conf(cycle, module)                    \
-    (cycle->conf_ctx[ngx_http_module.index] ?                                 \
-    ((ngx_http_conf_ctx_t *) cycle->conf_ctx[ngx_http_module.index])      \
-    ->loc_conf[module.ctx_index]:                                    \
-    NULL)
+#define ngx_http_cycle_get_module_loc_conf(cycle, module)            \
+    (cycle->conf_ctx[ngx_http_module.index] ?                        \
+    ((ngx_http_conf_ctx_t *) cycle->conf_ctx[ngx_http_module.index]) \
+    ->loc_conf[module.ctx_index] : NULL)
 
 
 static void ngx_http_rpc_process_notify_task(void *ctx)
 {
     ngx_http_rpc_conf_t *conf = (ngx_http_rpc_conf_t *) ctx;
 
-    ngx_rpc_notify_t *notify  = conf->notify;
+    ngx_rpc_notify_t *notify = conf->notify;
 
     ngx_queue_t task_nofity;
-
-    // processing pending nofity
+    // processing pending notify
     ngx_shmtx_lock(&notify->lock_task);
 
     if(!ngx_queue_empty(notify->task))
@@ -93,7 +91,7 @@ static void ngx_http_rpc_process_notify_task(void *ctx)
     {
         ngx_rpc_notify_task_t *t = ngx_queue_data(p, ngx_rpc_notify_task_t, node);
 
-        ngx_proc_rpc_process_one_task((ngx_rpc_task_t*)t->ctx);
+        ngx_http_rpc_proccess_task((ngx_rpc_task_t*)t->ctx);
         p = p->next;
         ngx_slab_free_locked(notify->shpool, p);
     }
@@ -117,6 +115,7 @@ static void ngx_http_rpc_exit_process(ngx_cycle_t *cycle)
 {
     ngx_http_rpc_conf_t *conf =
             ngx_http_cycle_get_module_loc_conf(cycle, ngx_http_rpc_module);
+
     ngx_rpc_notify_destory(conf->notify);
 }
 
@@ -206,15 +205,122 @@ static void* ngx_http_rpc_create_loc_conf(ngx_conf_t *cf)
 }
 
 
-
-
-void ngx_http_rpc_ctx_free(void* ctx)
+/////////////////////
+static void ngx_http_rpc_proccess_task(ngx_rpc_task_t* task)
 {
-    ngx_http_rpc_ctx_t *c = (ngx_http_rpc_ctx_t*)ctx;
-    ngx_slab_free_locked(c->shpool, c);
+    ngx_http_rpc_ctx_t *ctx = (ngx_http_rpc_ctx_t *)task->ctx;
+
+    task->filter(ctx->r, task);
+
+    if(task->type == PROCESS_IN_PROC )
+    {
+        ngx_shmtx_lock(&ctx->task_lock);
+
+        for(ngx_queue_t *ptr = ctx->pending.prev;
+              ptr != &ctx->pending;
+              ptr = ptr->prev)
+        {
+                 if(ngx_queue_data(ptr, ngx_rpc_task_t, pending) ==  task)
+                 {
+                     ngx_queue_remove(ptr);
+                 }
+        }
+
+        ngx_queue_insert_after(&ctx->done, &task->done);
+
+        ngx_shmtx_lock(&ctx->task_lock);
+
+        ngx_rpc_notify_task(&ctx->notify, NULL, task);
+
+        return;
+    }
+
+    ngx_shmtx_lock(&ctx->task_lock);
+    ngx_queue_insert_after(&ctx->done, &task->done);
+    ngx_shmtx_lock(&ctx->task_lock);
 }
 
 
+static void ngx_http_rpc_dispatcher_task(ngx_rpc_task_t* task)
+{
+
+    // 2 do or foward
+    switch (task->type) {
+
+    case PROCESS_IN_PROC:
+        ngx_shmtx_lock(&ctx->task_lock);
+        ngx_queue_insert_after(&ctx->pending, &task->pending);
+        ngx_http_rpc_task_ref_add(task->refcount);
+        ngx_shmtx_lock(&ctx->task_lock);
+        ngx_rpc_process_push_task(task);
+        break;
+
+    default:
+        ngx_http_rpc_proccess_task(task);
+        break;
+    }
+}
+
+
+
+ngx_rpc_task_t* ngx_http_rpc_post_request_task_init(ngx_http_request_t *r,void * ctx)
+{
+    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
+            ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
+
+    // 1 new process task
+    ngx_rpc_task_t* task = ngx_http_rpc_task_create(rpc_ctx->shpool, rpc_ctx);
+
+    task->ctx = ctx;
+    task->status = TASK_INIT;
+
+    // 2 copy the request bufs
+
+    ngx_chain_t* req_chain = &task->req_bufs;
+
+    for(ngx_chain_t* c= r->request_body->bufs; c; c=c->next )
+    {
+        int buf_size = c->buf->last - c->buf->pos;
+        req_chain->buf = (ngx_buf_t*)ngx_slab_alloc_locked(rpc_ctx->shpool,
+                                                           sizeof(ngx_buf_t));
+
+        memcpy(c->buf, req_chain->buf,sizeof(ngx_buf_t));
+
+        req_chain->buf->pos = req_chain->buf->start =
+                (u_char*) ngx_slab_alloc_locked(ctx->shpool,buf_size);
+
+        memcpy(c->buf->pos, req_chain->buf->pos,buf_size);
+        req_chain->next = (ngx_chain_t*)ngx_slab_alloc_locked(ctx->shpool,
+                                                              sizeof(ngx_chain_t));
+        req_chain = req_chain->next;
+        req_chain->next = NULL;
+    }
+
+    return task;
+
+}
+
+
+ngx_rpc_task_t* ngx_http_rpc_sub_request_task_init(ngx_http_request_t *r, void * ctx)
+{
+    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
+            ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
+
+    // 1 new process task
+    ngx_rpc_task_t* task = ngx_http_rpc_task_create(rpc_ctx->shpool, rpc_ctx);
+
+    task->ctx = ctx;
+    task->status = TASK_INIT;
+
+
+    // 2 copy the request bufs
+    return task;
+
+}
+
+
+
+////////// ctx
 ngx_http_rpc_ctx_t* ngx_http_rpc_ctx_init(ngx_http_request_t *r, void *ctx)
 {
 
@@ -258,5 +364,156 @@ ngx_http_rpc_ctx_t* ngx_http_rpc_ctx_init(ngx_http_request_t *r, void *ctx)
     ngx_http_set_ctx(r, rpc_ctx, ngx_http_rpc_module);
 }
 
+void ngx_http_rpc_ctx_finish_by_task(void *ctx)
+{
+    ngx_rpc_task_t* task = (ngx_rpc_task_t*) ctx;
 
+    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)task->ctx;
+
+    ngx_http_request_t *r = rpc_ctx->r;
+
+    static ngx_str_t type = ngx_string(" application/x-protobuf");
+
+    r->headers_out.content_type = type;
+    r->headers_out.status = task->response_states;
+    r->headers_out.content_length_n = task->res_length;
+
+    r->connection->buffered |= NGX_HTTP_WRITE_BUFFERED;
+
+    ngx_int_t rc = ngx_http_send_header(r);
+    rc = ngx_http_output_filter(r, &chain);
+    ngx_http_finalize_request(r, rc);
+}
+
+void ngx_http_rpc_ctx_free(void* ctx)
+{
+    ngx_http_rpc_ctx_t *c = (ngx_http_rpc_ctx_t*)ctx;
+
+    // free task
+
+    ngx_slab_free_locked(c->shpool, c);
+}
+
+
+
+static void ngx_http_inspect_application_requeststatus_handler(void* r, ngx_rpc_task_t *task)
+{
+
+}
+
+typedef struct {
+    RpcChannel *channel;
+    const ::google::protobuf::Message* req;
+    ::google::protobuf::Message* res;
+    RpcCallHandler handler;
+    void (*pre_write_event_handler)(ngx_http_request_t *r);
+} sub_request_ctx_t;
+
+
+static void ngx_http_inspect_application_subrequest_parent(ngx_http_inspect_ctx_t *ctx, ngx_rpc_task_t *task)
+{
+    ngx_http_rpc_ctx_t* rpc_ctx =
+            ngx_http_get_module_ctx(r, ngx_http_rpc_module);
+
+    sub_request_ctx_t * sub_req_ctx  = (ngx_http_rpc_ctx_t*) rpc_ctx;
+
+     r->write_event_handler = sub_req_ctx->pre_write_event_handler;
+
+     // dispath
+    sub_req_ctx->handler(sub_req_ctx->channel, sub_req_ctx->req,
+                         sub_req_ctx->res, r->headers_out.status);
+}
+
+
+
+static void ngx_http_inspect_application_subrequest_done(ngx_http_inspect_ctx_t *ctx, ngx_rpc_task_t *task)
+{
+    ngx_http_request_t* child_req = r;
+    ngx_http_request_t* parent_req = r->parent;
+    parent_req->headers_out.status  = child_req->headers_out.status;
+
+    sub_request_ctx_t * sub_req_ctx = (sub_request_ctx_t *)data;
+    ngx_http_rpc_ctx_t* rpc_ctx =
+            ngx_http_get_module_ctx(r, ngx_http_rpc_module);
+    rpc_ctx ->sub_req_ctx = sub_req_ctx;
+
+    ngx_http_upstream_t* rup = r->upstream;
+
+    if(child_req->headers_out.status != NGX_HTTP_OK)
+    {
+         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                     "subrequest failed,r->headers_out.status:%d rc:%d", r->headers_out.status, rc);
+         pr->headers_out.status =  child_req->headers_out.status;
+
+         sub_req_ctx->pre_write_event_handler = parent_req->write_event_handler;
+         parent_req->write_event_handler = parent_handler;
+
+         return;
+    }
+
+    NgxChainBufferReader reader(*rup->out_bufs, parent_req->pool);
+
+    if(!sub_req_ctx->res->ParseFromZeroCopyStream(&reader))
+    {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                    "subrequest failed,r->headers_out.status:%d rc:%d", r->headers_out.status, rc);
+        pr->headers_out.status = NGX_HTTP_BAD_GATEWAY;
+    }
+
+
+
+    sub_req_ctx->pre_write_event_handler = parent_req->write_event_handler;
+    parent_req->write_event_handler = parent_handler;
+}
+
+
+static void ngx_http_inspect_application_subrequest_begin(ngx_http_inspect_ctx_t *ctx, ngx_rpc_task_t *task)
+{
+
+
+    ngx_http_post_subrequest_t *psr =
+            ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
+
+    if(psr == NULL)
+    {
+        handler(this, req, res,NGX_HTTP_INTERNAL_SERVER_ERROR);
+        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR );
+    }
+
+    sub_request_ctx_t * ctx = new sub_request_ctx_t();
+    ctx->channel = this;
+    ctx->handler = handler;
+    ctx->req     = req;
+    ctx->res     = res;
+
+    psr->handler = subrequest_post_handler;
+    psr->data    = ctx;
+
+    r->request_body->bufs = ngx_palloc(r->pool, sizeof(ngx_chain_t));
+
+    NgxChainBufferWriter writer(*(r->request_body->bufs), r->pool);
+
+    if(!req->SerializeToZeroCopyStream(&writer))
+    {
+        ERROR("SerializeToZeroCopyStream failed:"<<req->GetTypeName());
+        done->Run();
+        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+        return;
+    }
+
+    ngx_http_header_modify_content_length(r, writer.totaly);
+
+    ngx_str_t forward = ngx_string(path.c_str());
+
+    ngx_http_request_t *sr;
+    ngx_int_t rc = ngx_http_subrequest(r, &forward, NULL, &sr, psr, NGX_HTTP_SUBREQUEST_IN_MEMORY);
+
+    if(rc != NGX_OK)
+    {
+        ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "ngx_http_subrequest failed:%d", rc);
+        delete  ctx;
+        handler(this, req, res, NGX_HTTP_INTERNAL_SERVER_ERROR);
+        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+    }
+}
 

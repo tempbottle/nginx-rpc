@@ -80,7 +80,14 @@ ngx_module_t ngx_proc_rpc_module = {
 bool  ngx_rpc_process_push_task(ngx_rpc_task_t *task)
 {
     ngx_proc_rpc_conf_t *conf =  ngx_proc_get_conf(ngx_cycle->conf_ctx, ngx_proc_rpc_module);
-    return ngx_rpc_queue_push(conf->queue, task);
+    ngx_http_rpc_task_ref_add(task);
+
+    if(!ngx_rpc_queue_push(conf->queue, task))
+    {
+        ngx_http_rpc_task_ref_sub(task);
+        return false;
+    }
+    return true;
 }
 
 

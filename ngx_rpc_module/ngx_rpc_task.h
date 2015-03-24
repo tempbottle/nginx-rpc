@@ -6,8 +6,8 @@
 
 struct ngx_rpc_task_t;
 
-// next = filter(ctx, task, pres)
-typedef void* (*ngx_task_filter)(void* ctx, ngx_rpc_task_t* task, ngx_rpc_task_t* sp);
+// filter(ctx, task)
+typedef void (*ngx_task_filter)(void* ctx, ngx_rpc_task_t* task);
 
 
 // http key value
@@ -36,8 +36,10 @@ typedef enum {
 
 typedef struct {
     //task stack ,
+    ngx_task_filter filter;
     void* ctx;
 
+    ngx_slab_pool_t *pool;
     ngx_queue_t pending;
     ngx_queue_t done;
 
@@ -48,8 +50,12 @@ typedef struct {
     // for rpc request req & res
     ngx_chain_t req_bufs;
     ngx_chain_t res_bufs;
+    ngx_uint_t  res_length;
 
+    // clousre
     ngx_task_filter filter;
+    void* ctx;
+
 
     // mertics
     int response_states;
@@ -59,8 +65,6 @@ typedef struct {
 
     // for destory
     volatile ngx_uint_t refcount;
-    ngx_slab_pool_t *pool;
-
     task_type_t type:4;
     task_status_t status:4;
 
