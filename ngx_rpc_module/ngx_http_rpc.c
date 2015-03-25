@@ -1,5 +1,51 @@
 #include "ngx_http_rpc.h"
 
+
+int ngx_http_header_modify_content_length(ngx_http_request_t *r, ngx_int_t value)
+{
+    r->headers_in.content_length_n = value;
+
+
+    ngx_list_part_t *part =  &r->headers_in.headers.part;
+    ngx_table_elt_t *header = part->elts;
+    unsigned int i = 0;
+    for( i = 0; /* void */ ; i++)
+    {
+        if(i >= part->nelts)
+        {
+            if( part->next  == NULL)
+            {
+                break;
+            }
+
+            part = part->next;
+            header = part->elts;
+            i = 0;
+        }
+
+        if(header[i].hash == 0)
+        {
+            continue;
+        }
+
+        if(0 == ngx_strncasecmp(header[i].key.data,
+                                (u_char*)"Content-Length:",
+                                header[i].key.len))
+        {
+
+            header[i].value.data = ngx_palloc(r->pool, 32);
+            header[i].value.len = 32;
+
+            snprintf((char*)header[i].value.data,
+                     32, "%ld", value);
+            r->headers_in.content_length->value =  header[i].value;
+
+            return NGX_OK;
+        }
+    }
+    return NGX_ERROR;
+}
+
 static char * ngx_http_rpc_conf_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 /* Commands */
@@ -467,41 +513,22 @@ static void ngx_http_inspect_application_subrequest_done(ngx_http_inspect_ctx_t 
 }
 
 
-static void ngx_http_inspect_application_subrequest_begin(ngx_http_inspect_ctx_t *ctx, ngx_rpc_task_t *task)
+void ngx_http_inspect_application_subrequest_begin(void *ctx, ngx_rpc_task_t *task)
 {
-
+    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t*)ctx;
+    ngx_http_request_t* r = (ngx_http_request_t*)rpc_ctx->r;
 
     ngx_http_post_subrequest_t *psr =
             ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
 
     if(psr == NULL)
     {
-        handler(this, req, res,NGX_HTTP_INTERNAL_SERVER_ERROR);
-        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR );
-    }
-
-    sub_request_ctx_t * ctx = new sub_request_ctx_t();
-    ctx->channel = this;
-    ctx->handler = handler;
-    ctx->req     = req;
-    ctx->res     = res;
-
-    psr->handler = subrequest_post_handler;
-    psr->data    = ctx;
-
-    r->request_body->bufs = ngx_palloc(r->pool, sizeof(ngx_chain_t));
-
-    NgxChainBufferWriter writer(*(r->request_body->bufs), r->pool);
-
-    if(!req->SerializeToZeroCopyStream(&writer))
-    {
-        ERROR("SerializeToZeroCopyStream failed:"<<req->GetTypeName());
-        done->Run();
-        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
+        //TODO finish the request
         return;
     }
 
-    ngx_http_header_modify_content_length(r, writer.totaly);
+    r->request_body->bufs = task->req_bufs;
+    ngx_http_header_modify_content_length(r, task->res_length);
 
     ngx_str_t forward = ngx_string(path.c_str());
 

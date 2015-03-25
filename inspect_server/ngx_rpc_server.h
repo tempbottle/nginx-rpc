@@ -45,7 +45,6 @@ public:
                      RpcCallHandler done);
 
 
-
 public:
     ngx_http_request_t* r;
     ngx_rpc_task_t *task;

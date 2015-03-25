@@ -85,4 +85,12 @@ typedef struct
 extern ngx_module_t ngx_http_rpc_module;
 
 
+
+// for sub request
+
+void ngx_http_inspect_application_subrequest_begin(void* ctx, ngx_rpc_task_t *task);
+
+
+int ngx_http_header_modify_content_length(ngx_http_request_t *r, ngx_int_t value);
+
 #endif
