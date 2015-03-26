@@ -1,14 +1,20 @@
-#ifndef __NGX_RPC_SERVER_H_
-#define __NGX_RPC_SERVER_H_
+#ifndef __NGX_RPC_CHANNEL_H_
+#define __NGX_RPC_CHANNEL_H_
+
+extern "C" {
+   #include "ngx_rpc_task.h"
+}
+
 
 #include <memory>
 #include <functional>
+
+
 
 #include "google/protobuf/message.h"
 
 #include "ngx_log_cpp.h"
 #include "ngx_rpc_buffer.h"
-#include "ngx_rpc_task.h"
 
 int ngx_http_header_modify_content_length(ngx_http_request_t *r,
                                           ngx_int_t value);
@@ -39,10 +45,12 @@ public:
 
     int getResponseHeader();
 
-    void sub_request(const std::string& path,
+    void start_subrequest(const std::string& path,
                      const ::google::protobuf::Message* req,
                      ::google::protobuf::Message* res,
                      RpcCallHandler done);
+
+    static void finish_request(void* ctx,   ngx_rpc_task_t *task);
 
 
 public:
@@ -51,6 +59,7 @@ public:
 
     ::google::protobuf::Message *req;
     ::google::protobuf::Message *res;
+    RpcCallHandler  currenthandler;
 };
 
 

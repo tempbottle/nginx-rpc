@@ -40,17 +40,17 @@ class ApplicationClient {
 public:
     void interface(RpcChannel *channel,const ::ngxrpc::inspect::Request* request,
                    ::ngxrpc::inspect::Response* response,
-                   ApplicationHandler done )
+                   RpcCallHandler done )
     {
 
         channel->sub_request("/ngxrpc/inspect/Application/interface",request, response, done);
     }
 
 
-    void requeststatus(RpcController *cntl,
+    void requeststatus(RpcChannel *channel,
                        const ::ngxrpc::inspect::Request* request,
                        ::ngxrpc::inspect::Response* response,
-                       ApplicationHandler done)
+                       RpcCallHandler done)
     {
         channel->sub_request("/ngxrpc/inspect/Application/interface",request, response, done);
     }

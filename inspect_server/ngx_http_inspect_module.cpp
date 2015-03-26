@@ -1,13 +1,13 @@
 // C
-//extern "C" {
+extern "C" {
 #include "ngx_http_rpc.h"
-//}
+}
 
 
 
 // for rpc server header
 #include "inspect_impl.h"
-#include "ngx_rpc_server.h"
+#include "ngx_rpc_channel.h"
 
 
 // associate the http request session
@@ -126,6 +126,7 @@ static char *ngx_inspect_application_init(ngx_conf_t *cf, ngx_command_t *cmd, vo
     return NGX_OK;
 }
 
+
 static void ngx_inspect_process_exit(ngx_cycle_t* cycle)
 {
     ngx_http_conf_ctx_t * ctx = (ngx_http_conf_ctx_t *) cycle->conf_ctx[ngx_http_module.index];
@@ -169,6 +170,8 @@ void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,RpcChannel
 
     ngx_http_rpc_ctx_finish_by_task(task);
 }
+
+
 
 static void ngx_http_inspect_application_interface_handler(void* ctx, ngx_rpc_task_t *task)
 {

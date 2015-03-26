@@ -1,4 +1,3 @@
-
 #ifndef _NGX_RPC_TASK_H_
 #define _NGX_RPC_TASK_H_
 

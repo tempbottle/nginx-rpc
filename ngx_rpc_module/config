@@ -1,15 +1,20 @@
 ngx_addon_name=ngx_rpc_module
 
 HTTP_MODULES="$HTTP_MODULES ngx_http_rpc_module"
+PROCS_MODULES="$PROCS_MODULES ngx_proc_rpc_module"
+
 
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
-    $ngx_addon_dir/ngx_http_rpc_module.c \
-    $ngx_addon_dir/ngx_log_cpp.cpp \
-    $ngx_addon_dir/ngx_rpc_server_list.cpp \
-    $ngx_addon_dir/ngx_rpc_api.cpp \
-    $ngx_addon_dir/ngx_rpc_router.cpp \
+    $ngx_addon_dir/ngx_http_rpc.c \
+    $ngx_addon_dir/ngx_rpc_process.c \
+    $ngx_addon_dir/ngx_rpc_task.c \
+    $ngx_addon_dir/ngx_rpc_notify.c \
+    $ngx_addon_dir/ngx_rpc_queue.c \
+    $ngx_addon_dir/ngx_http_rpc_subrequest.cpp \
     $ngx_addon_dir/ngx_rpc_buffer.cpp \
-    $ngx_addon_dir/ngx_rpc_server_controller.cpp"
+    $ngx_addon_dir/ngx_log_cpp.cpp \
+    $ngx_addon_dir/ngx_rpc_channel.cpp "
+
 
 PROTO_INC="$ngx_addon_dir/../thirdparty/protobuf/4.9/include"
 PROTO_LIB="$ngx_addon_dir/../thirdparty/protobuf/4.9/lib"

@@ -1,51 +1,5 @@
 #include "ngx_http_rpc.h"
 
-
-int ngx_http_header_modify_content_length(ngx_http_request_t *r, ngx_int_t value)
-{
-    r->headers_in.content_length_n = value;
-
-
-    ngx_list_part_t *part =  &r->headers_in.headers.part;
-    ngx_table_elt_t *header = part->elts;
-    unsigned int i = 0;
-    for( i = 0; /* void */ ; i++)
-    {
-        if(i >= part->nelts)
-        {
-            if( part->next  == NULL)
-            {
-                break;
-            }
-
-            part = part->next;
-            header = part->elts;
-            i = 0;
-        }
-
-        if(header[i].hash == 0)
-        {
-            continue;
-        }
-
-        if(0 == ngx_strncasecmp(header[i].key.data,
-                                (u_char*)"Content-Length:",
-                                header[i].key.len))
-        {
-
-            header[i].value.data = ngx_palloc(r->pool, 32);
-            header[i].value.len = 32;
-
-            snprintf((char*)header[i].value.data,
-                     32, "%ld", value);
-            r->headers_in.content_length->value =  header[i].value;
-
-            return NGX_OK;
-        }
-    }
-    return NGX_ERROR;
-}
-
 static char * ngx_http_rpc_conf_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 /* Commands */
@@ -199,7 +153,7 @@ static ngx_int_t ngx_proc_rpc_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     return NGX_OK;
 }
 
-static char * ngx_http_rpc_conf_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+static char *ngx_http_rpc_conf_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_rpc_conf_t *c = (ngx_http_rpc_conf_t *)conf;
 
@@ -289,6 +243,7 @@ static void ngx_http_rpc_proccess_task(ngx_rpc_task_t* task)
 
 static void ngx_http_rpc_dispatcher_task(ngx_rpc_task_t* task)
 {
+    ngx_http_rpc_ctx_t *ctx = (ngx_http_rpc_ctx_t *)task->ctx;
 
     // 2 do or foward
     switch (task->type) {
@@ -439,108 +394,3 @@ void ngx_http_rpc_ctx_free(void* ctx)
 
     ngx_slab_free_locked(c->shpool, c);
 }
-
-
-
-static void ngx_http_inspect_application_requeststatus_handler(void* r, ngx_rpc_task_t *task)
-{
-
-}
-
-typedef struct {
-    RpcChannel *channel;
-    const ::google::protobuf::Message* req;
-    ::google::protobuf::Message* res;
-    RpcCallHandler handler;
-    void (*pre_write_event_handler)(ngx_http_request_t *r);
-} sub_request_ctx_t;
-
-
-static void ngx_http_inspect_application_subrequest_parent(ngx_http_inspect_ctx_t *ctx, ngx_rpc_task_t *task)
-{
-    ngx_http_rpc_ctx_t* rpc_ctx =
-            ngx_http_get_module_ctx(r, ngx_http_rpc_module);
-
-    sub_request_ctx_t * sub_req_ctx  = (ngx_http_rpc_ctx_t*) rpc_ctx;
-
-     r->write_event_handler = sub_req_ctx->pre_write_event_handler;
-
-     // dispath
-    sub_req_ctx->handler(sub_req_ctx->channel, sub_req_ctx->req,
-                         sub_req_ctx->res, r->headers_out.status);
-}
-
-
-
-static void ngx_http_inspect_application_subrequest_done(ngx_http_inspect_ctx_t *ctx, ngx_rpc_task_t *task)
-{
-    ngx_http_request_t* child_req = r;
-    ngx_http_request_t* parent_req = r->parent;
-    parent_req->headers_out.status  = child_req->headers_out.status;
-
-    sub_request_ctx_t * sub_req_ctx = (sub_request_ctx_t *)data;
-    ngx_http_rpc_ctx_t* rpc_ctx =
-            ngx_http_get_module_ctx(r, ngx_http_rpc_module);
-    rpc_ctx ->sub_req_ctx = sub_req_ctx;
-
-    ngx_http_upstream_t* rup = r->upstream;
-
-    if(child_req->headers_out.status != NGX_HTTP_OK)
-    {
-         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                     "subrequest failed,r->headers_out.status:%d rc:%d", r->headers_out.status, rc);
-         pr->headers_out.status =  child_req->headers_out.status;
-
-         sub_req_ctx->pre_write_event_handler = parent_req->write_event_handler;
-         parent_req->write_event_handler = parent_handler;
-
-         return;
-    }
-
-    NgxChainBufferReader reader(*rup->out_bufs, parent_req->pool);
-
-    if(!sub_req_ctx->res->ParseFromZeroCopyStream(&reader))
-    {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                    "subrequest failed,r->headers_out.status:%d rc:%d", r->headers_out.status, rc);
-        pr->headers_out.status = NGX_HTTP_BAD_GATEWAY;
-    }
-
-
-
-    sub_req_ctx->pre_write_event_handler = parent_req->write_event_handler;
-    parent_req->write_event_handler = parent_handler;
-}
-
-
-void ngx_http_inspect_application_subrequest_begin(void *ctx, ngx_rpc_task_t *task)
-{
-    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t*)ctx;
-    ngx_http_request_t* r = (ngx_http_request_t*)rpc_ctx->r;
-
-    ngx_http_post_subrequest_t *psr =
-            ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
-
-    if(psr == NULL)
-    {
-        //TODO finish the request
-        return;
-    }
-
-    r->request_body->bufs = task->req_bufs;
-    ngx_http_header_modify_content_length(r, task->res_length);
-
-    ngx_str_t forward = ngx_string(path.c_str());
-
-    ngx_http_request_t *sr;
-    ngx_int_t rc = ngx_http_subrequest(r, &forward, NULL, &sr, psr, NGX_HTTP_SUBREQUEST_IN_MEMORY);
-
-    if(rc != NGX_OK)
-    {
-        ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "ngx_http_subrequest failed:%d", rc);
-        delete  ctx;
-        handler(this, req, res, NGX_HTTP_INTERNAL_SERVER_ERROR);
-        ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-    }
-}
-
