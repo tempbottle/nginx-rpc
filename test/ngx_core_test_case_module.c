@@ -135,10 +135,8 @@ ngx_core_test_case_prepare(ngx_cycle_t *cycle)
 
 
 
-static ngx_int_t
-ngx_core_test_case_process_init(ngx_cycle_t *cycle)
+static ngx_int_t ngx_core_test_case_process_init(ngx_cycle_t *cycle)
 {
-
     ngx_core_conf_t   *ccf;
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
@@ -164,7 +162,6 @@ ngx_core_test_case_exit_process(ngx_cycle_t *cycle)
 {
     ngx_log_error(NGX_LOG_EMERG, cycle->log, 0, "core_test_case %V",
                   &ngx_cached_http_time);
-
 }
 
 

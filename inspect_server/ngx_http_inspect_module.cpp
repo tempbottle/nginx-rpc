@@ -21,7 +21,6 @@ typedef struct
 {
     uint64_t timeout_ms;
     ngxrpc::inspect::ApplicationServer* application_impl;
-
     // other servers go here
 } ngx_http_inspect_conf_t;
 
