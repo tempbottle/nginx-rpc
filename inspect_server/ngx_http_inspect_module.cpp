@@ -19,29 +19,38 @@ typedef struct {
 
 typedef struct
 {
-    uint64_t timeout_ms;
+    ngx_log_t *log;
+
+    // TODO
+    ngx_hash_t method_timeout;
+    ngx_hash_t method_sync;
+
     ngxrpc::inspect::ApplicationServer* application_impl;
+
     // other servers go here
 } ngx_http_inspect_conf_t;
 
 
-static char *ngx_inspect_application_init(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+static char *ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+static char *ngx_conf_set_inspect_application_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 /* Commands */
 static ngx_command_t ngx_http_inspect_commands[] = {
-    { ngx_string("inspect_application_init"),
+    { ngx_string("set_inspect_application_hanlder"),
       NGX_HTTP_LOC_CONF | NGX_CONF_ANY,
-      ngx_inspect_application_init,
+      ngx_conf_set_inspect_application_hanlder,
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       NULL },
 
-    { ngx_string("inspect_timeout_ms"),
+    { ngx_string("set_inspect_application_log"),
       NGX_HTTP_SRV_CONF | NGX_CONF_ANY,
-      ngx_conf_set_msec_slot,
+      ngx_conf_set_inspect_application_log,
       NGX_HTTP_SRV_CONF_OFFSET,
       offsetof(ngx_http_inspect_conf_t, timeout_ms),
       NULL },
+
+
 
     ngx_null_command
 };
@@ -104,14 +113,14 @@ static void* ngx_http_inspect_create_loc_conf(ngx_conf_t *cf)
 
     conf->application_impl = (ngxrpc::inspect::ApplicationServer*)
             NGX_CONF_UNSET_PTR;
-    conf->timeout_ms       = NGX_CONF_UNSET_UINT;
+
 
     return conf;
 }
 
 static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r);
 
-static char *ngx_inspect_application_init(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+static char *ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_inspect_conf_t *c = (ngx_http_inspect_conf_t*) conf;
 
@@ -127,6 +136,16 @@ static char *ngx_inspect_application_init(ngx_conf_t *cf, ngx_command_t *cmd, vo
     return NGX_OK;
 }
 
+
+static char *ngx_conf_set_inspect_application_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+     ngx_http_inspect_conf_t *c = (ngx_http_inspect_conf_t*) conf;
+
+     ngx_str_t *value = (ngx_str_t *)cf->args->elts;
+
+     c->log =
+
+}
 
 static void ngx_inspect_process_exit(ngx_cycle_t* cycle)
 {
