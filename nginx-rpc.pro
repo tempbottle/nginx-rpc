@@ -942,4 +942,5 @@ SOURCES += \
 
 OTHER_FILES += \
     ngx_rpc_module/config \
-    inspect_server/config
+    inspect_server/config \
+    Makefile

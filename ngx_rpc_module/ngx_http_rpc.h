@@ -30,7 +30,7 @@ ngx_rpc_task_t* ngx_http_rpc_sub_request_task_init(ngx_http_request_t *r, void *
 /// \brief ngx_http_rpc_proccess_task
 /// \param task
 ///
-void ngx_http_rpc_proccess_task(ngx_rpc_task_t* task);
+//static void ngx_http_rpc_proccess_task(ngx_rpc_task_t* task);
 
 ///
 /// \brief ngx_http_rpc_dispatcher_task

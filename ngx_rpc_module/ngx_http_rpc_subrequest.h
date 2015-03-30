@@ -1,9 +1,9 @@
 #ifndef _NGX_HTTP_RPC_SUBREQUEST_H_
 #define _NGX_HTTP_RPC_SUBREQUEST_H_
 
-extern "C" {
-    #include "ngx_rpc_task.h"
-}
+
+#include "ngx_rpc_task.h"
+
 
 // for sub request
 

@@ -162,9 +162,9 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
         ngx_buf_t* b =(ngx_buf_t*)ngx_slab_alloc_locked(pool, sizeof(ngx_buf_t));
 
         b->start = (u_char*)ngx_slab_alloc_locked(pool, *size);
-        b->pos   = bf->start;
+        b->pos   = b->start;
         b->last  = b->start;
-        b->end   = b->last + size;
+        b->end   = b->last + *size;
         b->temporary = 1;
 
         cur_pos = b->last;

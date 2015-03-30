@@ -1,6 +1,7 @@
 #ifndef __NGX_RPC_QUEUE_H_
 #define __NGX_RPC_QUEUE_H_
 
+
 #include <assert.h>
 
 #include <ngx_config.h>
@@ -65,7 +66,7 @@ int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue);
 /// \param task
 /// \return
 ///
-bool ngx_rpc_queue_push(ngx_rpc_queue_t *queue, void* task);
+int ngx_rpc_queue_push(ngx_rpc_queue_t *queue, void* task);
 
 ///
 /// \brief ngx_rpc_queue_pop_block

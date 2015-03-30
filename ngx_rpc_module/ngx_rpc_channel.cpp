@@ -1,10 +1,15 @@
-#include "ngx_rpc_channel.h"
+
+
+extern "C" {
 #include "ngx_http_rpc.h"
+}
 
 
+#include "ngx_rpc_channel.h"
+#include "ngx_http_rpc_subrequest.h"
 /// Rpc channel
 ///
-static void RpcChannel::destructor(void *p)
+void RpcChannel::destructor(void *p)
 {
     RpcChannel *tp = (RpcChannel*)p;
     delete tp->req;
@@ -13,7 +18,7 @@ static void RpcChannel::destructor(void *p)
 }
 
 
-void RpcChannel::sub_request(const std::string& path,
+void RpcChannel::start_subrequest(const std::string& path,
                  const ::google::protobuf::Message* req,
                  ::google::protobuf::Message* res,
                  RpcCallHandler done)
@@ -21,7 +26,7 @@ void RpcChannel::sub_request(const std::string& path,
 
     ngx_rpc_task_t *task = NULL;
 
-    this->req = req;
+    this->req = (::google::protobuf::Message*)req;
     this->res = res;
     this->currenthandler = done;
 
@@ -36,34 +41,34 @@ void RpcChannel::sub_request(const std::string& path,
 
         task->type = PROCESS_IN_PROC;
 
-        task->filter = ngx_http_inspect_application_subrequest_begin;
+        task->filter = ngx_http_rpc_subrequest_start;
 
-        task->path = ngx_slab_alloc_locked(task->pool, path.size() +1);
+        task->path = (char *)ngx_slab_alloc_locked(task->pool, path.size() +1);
 
         strncpy(task->path, path.c_str(), path.size());
 
-        NgxShmChainBufferWriter writer(&task->req_bufs, task->pool);
+        NgxShmChainBufferWriter writer(task->req_bufs, task->pool);
         req->SerializeToZeroCopyStream(&writer);
 
         ngx_rpc_notify_task(c->notify, NULL, task);
         return;
     }
-
 }
 
 
-static void RpcChannel::finish_request(void* ctx, ngx_rpc_task_t *task)
+void RpcChannel::finish_request(void* ctx, ngx_rpc_task_t *task)
 {
+
+    ngx_http_rpc_ctx_t *c = (ngx_http_rpc_ctx_t*) ctx;
 
     RpcChannel *channel = (RpcChannel *)c->r_ctx;
 
     if(task->response_states == NGX_OK)
     {
-            NgxChainBufferReader reader(&task->res_bufs);
-            channel->res->SerializeToZeroCopyStream(&reader);
+        NgxShmChainBufferWriter writer(task->res_bufs, task->pool);
+        channel->res->SerializeToZeroCopyStream(&writer);
     }
 
-    ngx_http_rpc_ctx_t *c = (ngx_http_rpc_ctx_t*) ctx;
 
-   this->currenthandler(channel,channel->req, channel->res, task->response_states);
+   channel->currenthandler(channel,channel->req, channel->res, task->response_states);
 }

@@ -2,7 +2,7 @@
 #define INSPECT_SERVER_IMPL_H
 
 #include "inspect.pb.h"
-#include "ngx_rpc_server.h"
+#include "ngx_rpc_channel.h"
 
 
 /// simple is better
@@ -43,7 +43,7 @@ public:
                    RpcCallHandler done )
     {
 
-        channel->sub_request("/ngxrpc/inspect/Application/interface",request, response, done);
+        channel->start_subrequest("/ngxrpc/inspect/Application/interface",request, response, done);
     }
 
 
@@ -52,7 +52,7 @@ public:
                        ::ngxrpc::inspect::Response* response,
                        RpcCallHandler done)
     {
-        channel->sub_request("/ngxrpc/inspect/Application/interface",request, response, done);
+        channel->start_subrequest("/ngxrpc/inspect/Application/interface",request, response, done);
     }
 public:
 

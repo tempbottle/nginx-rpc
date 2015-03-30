@@ -1,12 +1,12 @@
 #ifndef _NGX_RPC_TASK_H_
 #define _NGX_RPC_TASK_H_
 
+
+typedef unsigned short u_short;
+
 #include <ngx_core.h>
 
-struct ngx_rpc_task_t;
 
-// filter(ctx, task)
-typedef void (*ngx_task_filter)(void* ctx, ngx_rpc_task_t* task);
 
 
 // http key value
@@ -33,17 +33,13 @@ typedef enum {
 
 #define MAX_PRE_TASK_NUM 4
 
-typedef struct {
-    //task stack ,
-    ngx_task_filter filter;
-    void* ctx;
-
+struct __ngx_rpc_task_t {
     ngx_slab_pool_t *pool;
     ngx_queue_t pending;
     ngx_queue_t done;
 
     // for sub request
-    const char *path;
+    char *path;
     ngx_queue_t params;
 
     // for rpc request req & res
@@ -52,7 +48,7 @@ typedef struct {
     ngx_uint_t  res_length;
 
     // clousre
-    ngx_task_filter filter;
+    void (*filter)(void* ctx, struct __ngx_rpc_task_t* task);
     void* ctx;
 
 
@@ -67,7 +63,9 @@ typedef struct {
     task_type_t type:4;
     task_status_t status:4;
 
-} ngx_rpc_task_t;
+};
+
+typedef struct __ngx_rpc_task_t ngx_rpc_task_t;
 
 
 ///
@@ -80,10 +78,10 @@ ngx_rpc_task_t * ngx_http_rpc_task_create(ngx_slab_pool_t *pool, void *ctx);
 void ngx_http_rpc_task_destory(ngx_rpc_task_t *t);
 
 #define ngx_http_rpc_task_ref_add(t) \
-    ngx_atomic_fetch_add(t->refcount, 1)
+    ngx_atomic_fetch_add(&(t->refcount), 1)
 
 #define ngx_http_rpc_task_ref_sub(t) \
-    if(0 == ngx_atomic_fetch_add(t->refcount, -1)) \
+    if(0 == ngx_atomic_fetch_add(&(t->refcount), -1)) \
          ngx_http_rpc_task_destory(t);
 
 extern  ngx_rbtree_node_t sentinel;

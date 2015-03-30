@@ -11,7 +11,7 @@
 
 #include "ngx_rpc_task.h"
 
-bool ngx_rpc_process_push_task(ngx_rpc_task_t *task);
+int ngx_rpc_process_push_task(ngx_rpc_task_t *task);
 
 
 #endif

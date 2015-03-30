@@ -1,6 +1,8 @@
 #ifndef _NGX_RPC_NOTIFY_H_
 #define _NGX_RPC_NOTIFY_H_
 
+
+
 #include <assert.h>
 
 #include <ngx_config.h>
@@ -41,11 +43,6 @@ typedef struct {
 
 
 // handler for event fd
-static void ngx_rpc_nofiy_default_hanlder(void*);
-
-static int  ngx_rpc_nofiy_read_handler(ngx_event_t *ev);
-
-static void ngx_event_hanlder_notify_write(ngx_event_t *ev);
 
 
 ngx_rpc_notify_t* ngx_rpc_notify_create(ngx_slab_pool_t *shpool , void *ctx);

@@ -16,8 +16,7 @@ extern "C" {
 #include "ngx_log_cpp.h"
 #include "ngx_rpc_buffer.h"
 
-int ngx_http_header_modify_content_length(ngx_http_request_t *r,
-                                          ngx_int_t value);
+
 
 
 class RpcChannel;
