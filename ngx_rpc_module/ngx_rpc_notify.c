@@ -45,11 +45,11 @@ ngx_rpc_notify_t *ngx_rpc_notify_create(ngx_slab_pool_t *shpool , void *ctx)
 
      notify->notify_conn->pool = NULL;
      notify->notify_conn->read->handler = ngx_rpc_notify_read_handler;
-     notify->notify_conn->read->log = NULL;
+     notify->notify_conn->read->log = ngx_cycle->log;
      notify->notify_conn->read->data = notify;
 
      notify->notify_conn->write->handler = ngx_rpc_notify_write_handler;
-     notify->notify_conn->write->log = NULL;
+     notify->notify_conn->write->log = ngx_cycle->log;
      notify->notify_conn->write->data = notify;
 
      notify->read_hanlder = ngx_rpc_notify_default_hanlder;

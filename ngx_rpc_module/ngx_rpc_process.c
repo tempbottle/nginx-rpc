@@ -43,16 +43,16 @@ static ngx_command_t ngx_proc_rpc_commands[] = {
 
 
 
-static void *ngx_proc_rpc_create_main_conf(ngx_conf_t *cf);
-static char *ngx_proc_rpc_init_main_conf(ngx_conf_t *cf, void *conf);
+static void *ngx_proc_rpc_create_loc_conf(ngx_conf_t *cf);
+static char *ngx_proc_rpc_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child);
 
 
 static ngx_proc_module_t ngx_proc_rpc_module_ctx = {
     ngx_string("ngx_proc_rpc"),
-    ngx_proc_rpc_create_main_conf,
-    ngx_proc_rpc_init_main_conf,
     NULL,
     NULL,
+    ngx_proc_rpc_create_loc_conf,
+    ngx_proc_rpc_merge_loc_conf,
     NULL,
     NULL,
     NULL,
@@ -180,18 +180,6 @@ static ngx_int_t ngx_proc_rpc_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     ctx->shpool = (ngx_slab_pool_t *) shm_zone->shm.addr;
     ctx->shpool->data = ctx;
 
-    ctx->queue = ngx_rpc_queue_create(ctx->shpool, ctx->queue_capacity);
-
-    ctx->queue->notify = ngx_proc_rpc_notify_task;
-    ctx->queue->wait = ngx_proc_rpc_wait_task;
-
-    if(ctx->queue == NULL)
-    {
-        ngx_log_error(NGX_LOG_EMERG, shm_zone->shm.log, 0,
-                      "ngx_rpc_queue_create failed ");
-        return NGX_ERROR;
-    }
-
     return NGX_OK;
 }
 
@@ -231,7 +219,7 @@ static char * ngx_proc_rpc_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void
 }
 
 
-static void *ngx_proc_rpc_create_main_conf(ngx_conf_t *cf)
+static void *ngx_proc_rpc_create_loc_conf(ngx_conf_t *cf)
 {
 
     ngx_proc_rpc_conf_t * conf = ngx_pcalloc(cf->pool, sizeof(ngx_proc_rpc_conf_t));
@@ -253,14 +241,20 @@ static void *ngx_proc_rpc_create_main_conf(ngx_conf_t *cf)
     return  conf;
 }
 
-static char *ngx_proc_rpc_init_main_conf(ngx_conf_t *cf, void *conf)
+static char *ngx_proc_rpc_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
-    ngx_proc_rpc_conf_t *rpc_conf = (ngx_proc_rpc_conf_t *) conf;
+    ngx_proc_rpc_conf_t *rpc_conf = (ngx_proc_rpc_conf_t *) child;
+
+    if(rpc_conf->queue_capacity == NGX_CONF_UNSET_UINT)
+    {
+        rpc_conf->queue_capacity = 256;
+    }
 
     if(rpc_conf->shm_size != NGX_CONF_UNSET_UINT)
         return NGX_CONF_OK;
 
     rpc_conf->shm_size = 4096*1024*256;
+
 
     static ngx_str_t rpc_shm_name = ngx_string("ngx_proc_rpc");
 
@@ -294,6 +288,20 @@ static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
 
     conf->notify->read_hanlder = ngx_proc_rpc_process_one_cycle;
     conf->notify->ctx = conf;
+
+
+    conf->queue = ngx_rpc_queue_create(conf->shpool, conf->queue_capacity);
+
+    conf->queue->notify = ngx_proc_rpc_notify_task;
+    conf->queue->wait = ngx_proc_rpc_wait_task;
+
+    if(conf->queue == NULL)
+    {
+         ngx_log_error(NGX_LOG_INFO,cycle->log, 0, "conf->queue ");
+
+        return NGX_ERROR;
+    }
+
 
      ngx_log_error(NGX_LOG_INFO,cycle->log, 0, "ngx_http_rpc_init_process");
 

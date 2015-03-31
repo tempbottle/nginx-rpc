@@ -228,6 +228,7 @@ char* ngx_http_rpc_merge_srv_conf(ngx_conf_t *cf, void *prev, void *conf){
     static ngx_str_t ngx_http_rpc = ngx_string("ngx_http_rpc_shm");
 
     children->shm_size = 4096*1024*256;
+    children->request_capacity = 256;
 
     ngx_shm_zone_t *shm_zone = ngx_shared_memory_add(cf, &ngx_http_rpc, children->shm_size,
                                                      &ngx_http_rpc_module);
