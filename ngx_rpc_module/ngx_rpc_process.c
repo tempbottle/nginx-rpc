@@ -43,13 +43,15 @@ static ngx_command_t ngx_proc_rpc_commands[] = {
 
 
 
-static void *ngx_proc_rpc_create_conf(ngx_conf_t *cf);
+static void *ngx_proc_rpc_create_main_conf(ngx_conf_t *cf);
+static char *ngx_proc_rpc_init_main_conf(ngx_conf_t *cf, void *conf);
+
 
 static ngx_proc_module_t ngx_proc_rpc_module_ctx = {
     ngx_string("ngx_proc_rpc"),
+    ngx_proc_rpc_create_main_conf,
+    ngx_proc_rpc_init_main_conf,
     NULL,
-    NULL,
-    ngx_proc_rpc_create_conf,
     NULL,
     NULL,
     NULL,
@@ -212,20 +214,24 @@ static char * ngx_proc_rpc_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void
         return NGX_CONF_ERROR;
     }
 
+    c->shm_size = size;
+
     static ngx_str_t rpc_shm_name = ngx_string("ngx_proc_rpc");
 
-    ngx_shm_zone_t *shm_zone = ngx_shared_memory_add(cf, &rpc_shm_name, size,
+    ngx_shm_zone_t *shm_zone = ngx_shared_memory_add(cf, &rpc_shm_name, c->shm_size,
                                                      &ngx_proc_rpc_module);
 
     shm_zone->init = ngx_proc_rpc_init_zone;
     shm_zone->data = c;
+
+    ngx_log_error(NGX_LOG_INFO, cf->log, 0 , "ngx_proc_rpc_set_shm_size %d", size);
 
     return NGX_CONF_OK;
 
 }
 
 
-static void *ngx_proc_rpc_create_conf(ngx_conf_t *cf)
+static void *ngx_proc_rpc_create_main_conf(ngx_conf_t *cf)
 {
 
     ngx_proc_rpc_conf_t * conf = ngx_pcalloc(cf->pool, sizeof(ngx_proc_rpc_conf_t));
@@ -247,15 +253,39 @@ static void *ngx_proc_rpc_create_conf(ngx_conf_t *cf)
     return  conf;
 }
 
+static char *ngx_proc_rpc_init_main_conf(ngx_conf_t *cf, void *conf)
+{
+    ngx_proc_rpc_conf_t *rpc_conf = (ngx_proc_rpc_conf_t *) conf;
+
+    if(rpc_conf->shm_size != NGX_CONF_UNSET_UINT)
+        return NGX_CONF_OK;
+
+    rpc_conf->shm_size = 4096*1024*256;
+
+    static ngx_str_t rpc_shm_name = ngx_string("ngx_proc_rpc");
+
+    ngx_shm_zone_t *shm_zone = ngx_shared_memory_add(cf, &rpc_shm_name, rpc_conf->shm_size,
+                                                     &ngx_proc_rpc_module);
+
+    shm_zone->init = ngx_proc_rpc_init_zone;
+    shm_zone->data = rpc_conf;
+
+    ngx_log_error(NGX_LOG_INFO, cf->log, 0 , "ngx_proc_rpc_set_shm_size %d by default", rpc_conf->shm_size);
+    return NGX_CONF_OK;
+}
 
 
 
 static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
 {
 
+    //ngx_proc_main_conf_t *main =   ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
     ngx_proc_rpc_conf_t * conf = ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
 
-    conf->notify = ngx_rpc_notify_create(conf->shpool, conf);\
+    if(conf == NULL)
+        return NGX_OK;
+
+    conf->notify = ngx_rpc_notify_create(conf->shpool, conf);
 
     if(0 == conf->notify)
     {
@@ -264,6 +294,8 @@ static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
 
     conf->notify->read_hanlder = ngx_proc_rpc_process_one_cycle;
     conf->notify->ctx = conf;
+
+     ngx_log_error(NGX_LOG_INFO,cycle->log, 0, "ngx_http_rpc_init_process");
 
     return 0;
 }

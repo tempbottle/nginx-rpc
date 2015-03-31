@@ -56,6 +56,7 @@ typedef struct
     ngx_queue_t done;
 
     uint64_t timeout_ms;
+    ngx_log_t *log;
 
 } ngx_http_rpc_ctx_t;
 
@@ -80,6 +81,7 @@ typedef struct
     // create by master shared by all process
     ngx_slab_pool_t  *shpool;
     ngx_rpc_notify_t *notify;
+
 } ngx_http_rpc_conf_t;
 
 extern ngx_module_t ngx_http_rpc_module;

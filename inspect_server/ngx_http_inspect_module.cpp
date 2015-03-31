@@ -14,6 +14,7 @@ extern "C" {
 typedef struct {
     RpcChannel *cntl;
     ngxrpc::inspect::ApplicationServer* application_impl;
+    ngx_log_t *log;
 } ngx_http_inspect_ctx_t;
 
 
@@ -29,6 +30,8 @@ typedef struct
 
     // other servers go here
 } ngx_http_inspect_conf_t;
+
+
 
 
 static char *ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
@@ -47,7 +50,7 @@ static ngx_command_t ngx_http_inspect_commands[] = {
       NGX_HTTP_SRV_CONF | NGX_CONF_ANY,
       ngx_conf_set_inspect_application_log,
       NGX_HTTP_SRV_CONF_OFFSET,
-      offsetof(ngx_http_inspect_conf_t, timeout_ms),
+      0,
       NULL },
 
 
@@ -114,8 +117,11 @@ static void* ngx_http_inspect_create_loc_conf(ngx_conf_t *cf)
     conf->application_impl = (ngxrpc::inspect::ApplicationServer*)
             NGX_CONF_UNSET_PTR;
 
+     conf->log = (ngx_log_t*) ngx_pcalloc(cf->pool, sizeof(ngx_log_t));
+     memset(conf->log, 0, sizeof(ngx_log_t));
 
-    return conf;
+     ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "ngx_http_inspect_create_loc_conf done");
+     return conf;
 }
 
 static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r);
@@ -127,35 +133,40 @@ static char *ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_comman
     c->application_impl = new ngxrpc::inspect::ApplicationServer();
     // Add some init
 
-
     ngx_http_core_loc_conf_t *clcf = (ngx_http_core_loc_conf_t *)
             ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
 
     clcf->handler = ngx_http_inspect_http_handler;
 
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "ngx_conf_set_inspect_application_hanlder done");
     return NGX_OK;
 }
 
 
 static char *ngx_conf_set_inspect_application_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-     ngx_http_inspect_conf_t *c = (ngx_http_inspect_conf_t*) conf;
+     ngx_http_inspect_conf_t *inspect_conf = (ngx_http_inspect_conf_t*) conf;
 
      ngx_str_t *value = (ngx_str_t *)cf->args->elts;
 
-     c->log =
+     inspect_conf->log->file = ngx_conf_open_file(cf->cycle, &value[1]);
+     inspect_conf->log->log_level = NGX_DEBUG;
 
+
+
+     ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "ngx_conf_set_inspect_application_log done");
+
+     return NGX_OK;
 }
 
 static void ngx_inspect_process_exit(ngx_cycle_t* cycle)
 {
     ngx_http_conf_ctx_t * ctx = (ngx_http_conf_ctx_t *) cycle->conf_ctx[ngx_http_module.index];
     ngx_http_inspect_conf_t *c = (ngx_http_inspect_conf_t *) ctx ->loc_conf[ngx_http_module.ctx_index];
+
+    ngx_log_error(NGX_LOG_INFO, cycle->log, 0, "ngx_inspect_process_exit done");
     delete c->application_impl;
 }
-
-
-
 
 
 
@@ -177,8 +188,6 @@ void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,RpcChannel
         ngx_http_rpc_ctx_finish_by_task(task);
         return;
     }
-
-
 
     if(res && task->type == PROCESS_IN_PROC)
     {
@@ -316,14 +325,25 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
 
         inspect_ctx->cntl = cntl;
         inspect_ctx->application_impl = inspect_conf->application_impl;
+        inspect_ctx->log = inspect_conf->log;
         ngx_http_set_ctx(r, inspect_ctx, ngx_http_inspect_module);
+
+        ngx_log_error(NGX_LOG_INFO,inspect_ctx->log, 0, "ngx_http_inspect_http_handler init the inspect_ctx");
     }
 
     if (ngx_http_get_module_ctx(r, ngx_http_rpc_module) == NULL)
     {
         ngx_http_rpc_ctx_t *rpc_ctx = ngx_http_rpc_ctx_init(r, inspect_ctx);
-        rpc_ctx->timeout_ms = inspect_conf->timeout_ms + ngx_current_msec;
+        rpc_ctx->timeout_ms = ngx_current_msec;
+        rpc_ctx->log  = inspect_ctx->log;
+
+        ngx_log_error(NGX_LOG_INFO,inspect_ctx->log, 0, "ngx_http_inspect_http_handler init the rpc_ctx");
     }
+
+    ngx_log_t *log_ptr = r->connection->log;
+
+    for(;log_ptr->next != NULL; log_ptr=log_ptr->next );
+    log_ptr->next = inspect_ctx->log;
 
     // 2 forward to the post handler
     ngx_int_t rc = ngx_http_read_client_request_body(r, ngx_http_inspect_post_async_handler);

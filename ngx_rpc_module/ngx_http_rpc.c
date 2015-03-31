@@ -22,7 +22,10 @@ static ngx_command_t  ngx_http_rpc_module_commands[] = {
 };
 
 
-static void* ngx_http_rpc_create_loc_conf(ngx_conf_t *cf);
+static void* ngx_http_rpc_create_srv_conf(ngx_conf_t *cf);
+static char* ngx_http_rpc_merge_srv_conf(ngx_conf_t *cf, void *prev, void *conf);
+
+
 /* Modules */
 static ngx_http_module_t  ngx_http_rpc_module_ctx = {
     NULL, /* preconfiguration */
@@ -31,8 +34,8 @@ static ngx_http_module_t  ngx_http_rpc_module_ctx = {
     NULL,                /* create main configuration */
     NULL,                /* init main configuration */
 
-    ngx_http_rpc_create_loc_conf,/* create server configuration */
-    NULL,                /* merge server configuration */
+    ngx_http_rpc_create_srv_conf,/* create server configuration */
+    ngx_http_rpc_merge_srv_conf,/* merge server configuration */
 
     NULL,                /* create location configuration */
     NULL                 /* merge location configuration */
@@ -104,8 +107,13 @@ static void ngx_http_rpc_process_notify_task(void *ctx)
 static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle)
 {
 
+    ngx_log_error(NGX_LOG_INFO,cycle->log, 0, "ngx_http_rpc_init_process");
+
     ngx_http_rpc_conf_t *conf =
             ngx_http_cycle_get_module_loc_conf(cycle, ngx_http_rpc_module);
+
+    if(conf == NULL)
+        return NGX_OK;
 
     conf->notify = ngx_rpc_notify_create(conf->shpool, conf);
 
@@ -184,12 +192,14 @@ static char *ngx_http_rpc_conf_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, 
     shm_zone->init = ngx_proc_rpc_init_zone;
     shm_zone->data = c;
 
+
+
     return NGX_CONF_OK;
 }
 
 
 
-static void* ngx_http_rpc_create_loc_conf(ngx_conf_t *cf)
+static void* ngx_http_rpc_create_srv_conf(ngx_conf_t *cf)
 {
     ngx_http_rpc_conf_t *conf = (ngx_http_rpc_conf_t *)
             ngx_pcalloc(cf->pool,sizeof(ngx_http_rpc_conf_t));
@@ -204,7 +214,30 @@ static void* ngx_http_rpc_create_loc_conf(ngx_conf_t *cf)
     conf->shpool = NULL;
     conf->notify = NULL;
 
+
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "ngx_http_rpc_create_srv_conf");
     return conf;
+}
+
+char* ngx_http_rpc_merge_srv_conf(ngx_conf_t *cf, void *prev, void *conf){
+    ngx_http_rpc_conf_t *children = (ngx_http_rpc_conf_t *)conf;
+
+    if(children->shm_size != NGX_CONF_UNSET_UINT)
+        return NGX_CONF_OK;
+
+    static ngx_str_t ngx_http_rpc = ngx_string("ngx_http_rpc_shm");
+
+    children->shm_size = 4096*1024*256;
+
+    ngx_shm_zone_t *shm_zone = ngx_shared_memory_add(cf, &ngx_http_rpc, children->shm_size,
+                                                     &ngx_http_rpc_module);
+
+    shm_zone->init = ngx_proc_rpc_init_zone;
+    shm_zone->data = children;
+
+    ngx_conf_log_error(NGX_LOG_INFO,cf,0,"ngx_http_rpc_merge_srv_conf");
+
+    return NGX_CONF_OK;
 }
 
 

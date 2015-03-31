@@ -515,7 +515,6 @@ SOURCES += bench/ngx_client.cpp \
            ngx_rpc_module/ngx_rpc_task.c \
            ngx_rpc_plugin/ngx_rpc_generator.cpp \
            ngx_rpc_plugin/ngx_rpc_plugin.cpp \
-           release/a.cpp \
            test/ngx_core_test_case_module.c \
            test/test_fork.cpp \
            thirdparty/protobuf/protobuf-master/examples/add_person.cc \
