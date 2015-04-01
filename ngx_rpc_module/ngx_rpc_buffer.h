@@ -27,7 +27,6 @@ public:
     ngx_chain_t *chain;
     u_char* cur_pos;
     unsigned int totaly;
-
 };
 
 

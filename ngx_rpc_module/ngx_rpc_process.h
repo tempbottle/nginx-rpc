@@ -10,7 +10,6 @@
 #include <ngx_log.h>
 
 #include "ngx_rpc_task.h"
-
 int ngx_rpc_process_push_task(ngx_rpc_task_t *task);
 
 

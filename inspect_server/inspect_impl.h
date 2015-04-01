@@ -10,7 +10,7 @@
 namespace ngxrpc { namespace inspect {
 
 
-
+/// a closure
 class ApplicationServer
 {
 public:
@@ -19,6 +19,7 @@ public:
                     ::ngxrpc::inspect::Response* response,
                     RpcCallHandler done)
      {
+
          // TODO your process
          done(channel, request, response, NGX_OK);
      }
@@ -31,6 +32,8 @@ public:
          // TODO your process
          done(channel, request, response, NGX_OK);
      }
+
+private:
 
 
 };
@@ -55,10 +58,7 @@ public:
         channel->start_subrequest("/ngxrpc/inspect/Application/interface",request, response, done);
     }
 public:
-
-
 };
-
 
 }}
 

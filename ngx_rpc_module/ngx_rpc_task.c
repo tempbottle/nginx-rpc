@@ -1,6 +1,5 @@
 #include "ngx_rpc_task.h"
 
-extern  ngx_rbtree_node_t sentinel;
 
 ////
 /// \brief ngx_http_rpc_task_create
@@ -8,21 +7,20 @@ extern  ngx_rbtree_node_t sentinel;
 /// \param ctx
 /// \return
 ///
-ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *pool, void *ctx)
+ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log)
 {
 
-
     ngx_rpc_task_t* task = (ngx_rpc_task_t*)
-            ngx_slab_alloc_locked(pool, sizeof(ngx_rpc_task_t));
+            ngx_slab_alloc(pool, sizeof(ngx_rpc_task_t));
+
+    if(task == NULL)
+        return NULL;
 
     memset(task, 0, sizeof(ngx_rpc_task_t));
-
-    task->ctx = ctx;
-
-    task->init_time_ms = ngx_current_msec;
-
+    task->log = log;
     return task;
 }
+
 
 
 ///
@@ -33,16 +31,24 @@ void ngx_http_rpc_task_destory(ngx_rpc_task_t *t){
 
     ngx_slab_pool_t *pool = t->pool;
 
-    if(t->path)
-        ngx_slab_free_locked(pool, (char*)t->path);
-
     // free params
 
     // free req_bufs
+    {
+        ngx_chain_t * ptr = &t->req_bufs;
+        for( ;ptr->buf != NULL;ptr= ptr->next)
+            ngx_slab_free(ptr->buf->start);
+    }
 
     // free res_bufs
+    {
+        ngx_chain_t * ptr = &t->res_bufs;
+        for( ;ptr->buf != NULL;ptr= ptr->next)
+            ngx_slab_free(ptr->buf->start);
+    }
 
     // free task
+    ngx_slab_free(pool, t);
 }
 
 

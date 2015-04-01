@@ -49,6 +49,8 @@ public:
                      ::google::protobuf::Message* res,
                      RpcCallHandler done);
 
+
+
     static void finish_request(void* ctx,   ngx_rpc_task_t *task);
 
 

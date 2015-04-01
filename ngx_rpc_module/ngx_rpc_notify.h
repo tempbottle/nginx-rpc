@@ -25,13 +25,14 @@ typedef struct {
 /// a notify object
 typedef struct {
 
+    ngx_log_t *log;
     ngx_slab_pool_t *shpool;
-
     ngx_connection_t *notify_conn;
     int event_fd;
 
     // pending task
     ngx_queue_t task;
+
     ngx_shmtx_sh_t psh;
     ngx_shmtx_t lock_task;
 
@@ -46,6 +47,7 @@ typedef struct {
 
 
 ngx_rpc_notify_t* ngx_rpc_notify_create(ngx_slab_pool_t *shpool , void *ctx);
+
 int ngx_rpc_notify_destory(ngx_rpc_notify_t* notify);
 
 int ngx_rpc_notify_task(ngx_rpc_notify_t* notify, void(*hanlder)(void*), void* data);

@@ -944,3 +944,5 @@ OTHER_FILES += \
     inspect_server/config \
     Makefile \
     README.md
+
+HEADERS +=

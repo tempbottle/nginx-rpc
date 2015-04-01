@@ -4,12 +4,6 @@ static char * ngx_http_rpc_conf_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd,
 
 /* Commands */
 static ngx_command_t  ngx_http_rpc_module_commands[] = {
-    { ngx_string("request_capacity"),
-      NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1,
-      ngx_conf_set_num_slot,
-      NGX_HTTP_SRV_CONF_OFFSET,
-      offsetof(ngx_http_rpc_conf_t, request_capacity),
-      NULL },
 
     { ngx_string("ngx_http_rpc_shm_size"),
       NGX_HTTP_SRV_CONF | NGX_CONF_TAKE1,
@@ -28,9 +22,8 @@ static char* ngx_http_rpc_merge_srv_conf(ngx_conf_t *cf, void *prev, void *conf)
 
 /* Modules */
 static ngx_http_module_t  ngx_http_rpc_module_ctx = {
-    NULL, /* preconfiguration */
-    NULL, /* postconfiguration */
-
+    NULL,                /* preconfiguration */
+    NULL,                /* postconfiguration */
     NULL,                /* create main configuration */
     NULL,                /* init main configuration */
 
@@ -44,7 +37,8 @@ static ngx_http_module_t  ngx_http_rpc_module_ctx = {
 
 static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle);
 static void ngx_http_rpc_exit_process(ngx_cycle_t *cycle);
-static void ngx_http_rpc_exit_master(ngx_cycle_t *cycle);
+
+
 
 ngx_module_t  ngx_http_rpc_module = {
     NGX_MODULE_V1,
@@ -53,13 +47,13 @@ ngx_module_t  ngx_http_rpc_module = {
     NGX_HTTP_MODULE,                       /* module type */
     NULL,                                  /* init master */
     /// there no where called init_master
-    /// but some where called init module instead
-    NULL,              /* init module */
+    /// but somewhere called init module instead
+    NULL,                                  /* init module */
     ngx_http_rpc_init_process,             /* init process */
     NULL,                                  /* init thread */
     NULL,                                  /* exit thread */
     ngx_http_rpc_exit_process,             /* exit process */
-    ngx_http_rpc_exit_master,             /* exit master */
+    NULL,
     NGX_MODULE_V1_PADDING
 };
 
@@ -72,7 +66,7 @@ ngx_module_t  ngx_http_rpc_module = {
     ((ngx_http_conf_ctx_t *) cycle->conf_ctx[ngx_http_module.index]) \
     ->loc_conf[module.ctx_index] : NULL)
 
-static void ngx_http_rpc_proccess_task(ngx_rpc_task_t* task);
+
 
 static void ngx_http_rpc_process_notify_task(void *ctx)
 {
@@ -83,12 +77,10 @@ static void ngx_http_rpc_process_notify_task(void *ctx)
     ngx_queue_t task_nofity;
     // processing pending notify
     ngx_shmtx_lock(&notify->lock_task);
-
     if(!ngx_queue_empty(&notify->task))
     {
         ngx_queue_split(&(notify->task), notify->task.next, &task_nofity);
     }
-
     ngx_shmtx_unlock(&notify->lock_task);
 
     ngx_queue_t *p = NULL;
@@ -97,8 +89,8 @@ static void ngx_http_rpc_process_notify_task(void *ctx)
         ngx_rpc_notify_task_t *t = ngx_queue_data(p, ngx_rpc_notify_task_t, next);
         ngx_rpc_task_t * task = t->ctx;
 
-        ngx_http_rpc_proccess_task(task);
-        p = p->next;
+        task_closure_exec(task);
+
         ngx_slab_free_locked(notify->shpool, p);
     }
 }
@@ -106,12 +98,10 @@ static void ngx_http_rpc_process_notify_task(void *ctx)
 
 static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle)
 {
-
-    ngx_log_error(NGX_LOG_INFO,cycle->log, 0, "ngx_http_rpc_init_process");
-
     ngx_http_rpc_conf_t *conf =
             ngx_http_cycle_get_module_loc_conf(cycle, ngx_http_rpc_module);
 
+    ngx_log_error(NGX_LOG_INFO,cycle->log, 0, "ngx_http_rpc_init_process conf:%p",conf);
     if(conf == NULL)
         return NGX_OK;
 
@@ -128,13 +118,10 @@ static void ngx_http_rpc_exit_process(ngx_cycle_t *cycle)
     ngx_http_rpc_conf_t *conf =
             ngx_http_cycle_get_module_loc_conf(cycle, ngx_http_rpc_module);
 
-    ngx_rpc_notify_destory(conf->notify);
-}
+    if(conf)
+        ngx_rpc_notify_destory(conf->notify);
 
-
-static void ngx_http_rpc_exit_master(ngx_cycle_t *cycle)
-{
-
+     ngx_log_error(NGX_LOG_INFO,cycle->log, 0, "ngx_http_rpc_init_process conf:%p",conf);
 }
 
 
@@ -192,8 +179,6 @@ static char *ngx_http_rpc_conf_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, 
     shm_zone->init = ngx_proc_rpc_init_zone;
     shm_zone->data = c;
 
-
-
     return NGX_CONF_OK;
 }
 
@@ -242,121 +227,6 @@ char* ngx_http_rpc_merge_srv_conf(ngx_conf_t *cf, void *prev, void *conf){
 }
 
 
-/////////////////////
-static void ngx_http_rpc_proccess_task(ngx_rpc_task_t* task)
-{
-    ngx_http_rpc_ctx_t *ctx = (ngx_http_rpc_ctx_t *)task->ctx;
-
-    task->filter(ctx->r, task);
-
-    if(task->type == PROCESS_IN_PROC )
-    {
-        ngx_shmtx_lock(&ctx->task_lock);
-
-        ngx_queue_t *ptr = NULL;
-        for(ptr = ctx->pending.prev;
-              ptr != &ctx->pending;
-              ptr = ptr->prev)
-        {
-                 if(ngx_queue_data(ptr, ngx_rpc_task_t, pending) ==  task)
-                 {
-                     ngx_queue_remove(ptr);
-                 }
-        }
-
-        ngx_queue_insert_after(&ctx->done, &task->done);
-
-        ngx_shmtx_lock(&ctx->task_lock);
-
-        ngx_rpc_notify_task(ctx->notify, NULL, task);
-
-        return;
-    }
-
-    ngx_shmtx_lock(&ctx->task_lock);
-    ngx_queue_insert_after(&ctx->done, &task->done);
-    ngx_shmtx_lock(&ctx->task_lock);
-}
-
-
-void ngx_http_rpc_dispatcher_task(ngx_rpc_task_t* task)
-{
-    ngx_http_rpc_ctx_t *ctx = (ngx_http_rpc_ctx_t *)task->ctx;
-
-    // 2 do or foward
-    switch (task->type) {
-
-    case PROCESS_IN_PROC:
-        ngx_shmtx_lock(&ctx->task_lock);
-        ngx_queue_insert_after(&ctx->pending, &task->pending);
-        ngx_http_rpc_task_ref_add(task);
-        ngx_shmtx_lock(&ctx->task_lock);
-        ngx_rpc_process_push_task(task);
-        break;
-
-    default:
-        ngx_http_rpc_proccess_task(task);
-        break;
-    }
-}
-
-
-
-ngx_rpc_task_t* ngx_http_rpc_post_request_task_init(ngx_http_request_t *r,void * ctx)
-{
-    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
-            ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
-
-    // 1 new process task
-    ngx_rpc_task_t* task = ngx_http_rpc_task_create(rpc_ctx->shpool, rpc_ctx);
-
-    task->ctx = ctx;
-    task->status = TASK_INIT;
-
-    // 2 copy the request bufs
-
-    ngx_chain_t* req_chain = &task->req_bufs;
-
-    ngx_chain_t* c = NULL;
-
-    for( c= r->request_body->bufs; c; c=c->next )
-    {
-        int buf_size = c->buf->last - c->buf->pos;
-        req_chain->buf = (ngx_buf_t*)ngx_slab_alloc_locked(rpc_ctx->shpool,
-                                                           sizeof(ngx_buf_t));
-
-        memcpy(c->buf, req_chain->buf,sizeof(ngx_buf_t));
-
-        req_chain->buf->pos = req_chain->buf->start =
-                (u_char*) ngx_slab_alloc_locked(rpc_ctx->shpool,buf_size);
-
-        memcpy(c->buf->pos, req_chain->buf->pos,buf_size);
-        req_chain->next = (ngx_chain_t*)ngx_slab_alloc_locked(rpc_ctx->shpool,
-                                                              sizeof(ngx_chain_t));
-        req_chain = req_chain->next;
-        req_chain->next = NULL;
-    }
-
-    return task;
-}
-
-
-ngx_rpc_task_t* ngx_http_rpc_sub_request_task_init(ngx_http_request_t *r, void * ctx)
-{
-    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
-            ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
-
-    // 1 new process task
-    ngx_rpc_task_t* task = ngx_http_rpc_task_create(rpc_ctx->shpool, rpc_ctx);
-
-    task->ctx = ctx;
-    task->status = TASK_INIT;
-
-
-    // 2 copy the request bufs
-    return task;
-
-}
 
 
 

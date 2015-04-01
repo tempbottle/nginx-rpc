@@ -1,14 +1,8 @@
 #ifndef _NGX_RPC_TASK_H_
 #define _NGX_RPC_TASK_H_
 
-
-typedef unsigned short u_short;
-
 #include <ngx_core.h>
-
-
-
-
+#define MAX_PATH_NAME 32
 // http key value
 typedef struct {
     ngx_queue_t next;
@@ -17,29 +11,32 @@ typedef struct {
 } ngx_rpc_task_params_t;
 
 
-// for which process the task process
-typedef enum {
-   PROCESS_IN_REQUEST    = 0,
-   PROCESS_IN_PROC       = 1,
-   PROCESS_IN_SUBREQUEST = 2,
-} task_type_t;
+typedef struct ngx_rpc_task_s ngx_rpc_task_t;
 
-typedef enum {
-   TASK_INIT          = 0,
-   TASK_PROCING       = 1,
-   TASK_DONE          = 2,
-} task_status_t;
+typedef struct {
+    void (*handler)(ngx_rpc_task_t* _this, void *p1);
+    void* p1;
+} task_closure_t;
+
+#define task_closure_exec(t) t->closure.handler(t, t->closure.p1)
 
 
-#define MAX_PRE_TASK_NUM 4
+typedef struct {
+    int line;
+    const char* fun;
+    const char* file;
+    ngx_uint_t create_ms;
+    ngx_uint_t done_ms;
+} task_metric_t ;
 
-struct __ngx_rpc_task_t {
+struct ngx_rpc_task_s {
+
+    volatile ngx_uint_t refcount;
     ngx_slab_pool_t *pool;
-    ngx_queue_t pending;
-    ngx_queue_t done;
+    ngx_log_t * log;
 
     // for sub request
-    char *path;
+    char interface[MAX_PATH_NAME];
     ngx_queue_t params;
 
     // for rpc request req & res
@@ -47,43 +44,60 @@ struct __ngx_rpc_task_t {
     ngx_chain_t res_bufs;
     ngx_uint_t  res_length;
 
-    // clousre
-    void (*filter)(void* ctx, struct __ngx_rpc_task_t* task);
-    void* ctx;
-
+    // closure
+    task_closure_t closure;
 
     // mertics
     int response_states;
-    int init_time_ms;
-    int time_out_ms;
-    int done_ms;
+    ngx_uint_t time_out_ms;
 
-    // for destory
-    volatile ngx_uint_t refcount;
-    task_type_t type:4;
-    task_status_t status:4;
-
+    task_metric_t metric;
 };
 
-typedef struct __ngx_rpc_task_t ngx_rpc_task_t;
 
+//// Some helper
+#define task_closure_init(t,h,p1) \
+    t->closure.handler = h ; \
+    t->closure.p1 = p1;
 
-///
-/// \brief ngx_http_rpc_destry_task
-/// \param t
-///
+#define task_metric_init(t) \
+    t->metric.line = __LINE__; \
+    t->metric.fun  = __FUNC__; \
+    t->metric.file  = __FILE__; \
+    t->metric.create_ms = ngx_current_msec;
 
-ngx_rpc_task_t * ngx_http_rpc_task_create(ngx_slab_pool_t *pool, void *ctx);
-
-void ngx_http_rpc_task_destory(ngx_rpc_task_t *t);
 
 #define ngx_http_rpc_task_ref_add(t) \
     ngx_atomic_fetch_add(&(t->refcount), 1)
 
 #define ngx_http_rpc_task_ref_sub(t) \
     if(0 == ngx_atomic_fetch_add(&(t->refcount), -1)) \
-         ngx_http_rpc_task_destory(t);
+    ngx_http_rpc_task_destory(t);
 
-extern  ngx_rbtree_node_t sentinel;
+#define ngx_http_rpc_task_trace(t) \
+    ngx_log_error(NGX_LOG_DEBUG, t->log, 0, \
+        "interface:%s, handler:%p p1:%p  init:%u, done:%u from:%s:%s%d", \
+        t->interface, \
+        t->closure.handler, \
+        t->closure.p1, \
+        t->metric.create_ms, \
+        t->metric.done_ms, \
+        t->metric.file, \
+        t->metric.fun, \
+        t->metric.line);
+
+///
+/// \brief ngx_http_rpc_destry_task
+/// \param t
+///
+
+ngx_rpc_task_t *ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log);
+
+
+void ngx_http_rpc_task_destory(ngx_rpc_task_t *t);
+
+
+
+
 
 #endif
