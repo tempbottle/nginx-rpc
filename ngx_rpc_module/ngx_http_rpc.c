@@ -238,7 +238,7 @@ ngx_http_rpc_ctx_t* ngx_http_rpc_ctx_init(ngx_http_request_t *r, void *ctx)
             ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
 
     ngx_http_rpc_ctx_t *rpc_ctx  = (ngx_http_rpc_ctx_t *)
-            ngx_slab_alloc_locked(rpc_conf->shpool, sizeof(ngx_http_rpc_ctx_t));
+            ngx_slab_alloc(rpc_conf->shpool, sizeof(ngx_http_rpc_ctx_t));
 
     if(rpc_ctx == NULL)
     {
@@ -276,26 +276,7 @@ ngx_http_rpc_ctx_t* ngx_http_rpc_ctx_init(ngx_http_request_t *r, void *ctx)
     return rpc_ctx;
 }
 
-void ngx_http_rpc_ctx_finish_by_task(void *ctx)
-{
-    ngx_rpc_task_t* task = (ngx_rpc_task_t*) ctx;
 
-    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)task->ctx;
-
-    ngx_http_request_t *r = rpc_ctx->r;
-
-    static ngx_str_t type = ngx_string(" application/x-protobuf");
-
-    r->headers_out.content_type = type;
-    r->headers_out.status = task->response_states;
-    r->headers_out.content_length_n = task->res_length;
-
-    r->connection->buffered |= NGX_HTTP_WRITE_BUFFERED;
-
-    ngx_int_t rc = ngx_http_send_header(r);
-    rc = ngx_http_output_filter(r, &task->res_bufs);
-    ngx_http_finalize_request(r, rc);
-}
 
 void ngx_http_rpc_ctx_free(void* ctx)
 {
@@ -304,4 +285,43 @@ void ngx_http_rpc_ctx_free(void* ctx)
     // free task
 
     ngx_slab_free_locked(c->shpool, c);
+}
+
+
+ngx_rpc_task_t* ngx_http_rpc_post_request_task_init(ngx_http_request_t *r,void * ctx)
+{
+    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
+            ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
+
+    // 1 new process task
+    ngx_rpc_task_t* task = ngx_http_rpc_task_create(rpc_ctx->shpool, rpc_ctx);
+
+    task->ctx = ctx;
+    task->status = TASK_INIT;
+
+    // 2 copy the request bufs
+
+    ngx_chain_t* req_chain = &task->req_bufs;
+
+    ngx_chain_t* c = NULL;
+
+    for( c= r->request_body->bufs; c; c=c->next )
+    {
+        int buf_size = c->buf->last - c->buf->pos;
+        req_chain->buf = (ngx_buf_t*)ngx_slab_alloc_locked(rpc_ctx->shpool,
+                                                           sizeof(ngx_buf_t));
+
+        memcpy(c->buf, req_chain->buf,sizeof(ngx_buf_t));
+
+        req_chain->buf->pos = req_chain->buf->start =
+                (u_char*) ngx_slab_alloc_locked(rpc_ctx->shpool,buf_size);
+
+        memcpy(c->buf->pos, req_chain->buf->pos,buf_size);
+        req_chain->next = (ngx_chain_t*)ngx_slab_alloc_locked(rpc_ctx->shpool,
+                                                              sizeof(ngx_chain_t));
+        req_chain = req_chain->next;
+        req_chain->next = NULL;
+    }
+
+    return task;
 }

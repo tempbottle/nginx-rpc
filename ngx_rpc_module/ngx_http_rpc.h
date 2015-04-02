@@ -19,17 +19,7 @@
 /// for rpc_task
 #include "ngx_rpc_task.h"
 
-
-/// for rpc_ctx
-typedef struct
-{
-    ngx_slab_pool_t  *shpool;
-    ngx_rpc_notify_t *notify;
-
-    ngx_http_request_t *r;
-    void* r_ctx;
-
-} ngx_http_rpc_ctx_t;
+ngx_rpc_task_t* ngx_http_rpc_post_request_task_init(ngx_http_request_t *r,void * ctx);
 
 ///
 /// \brief ngx_http_rpc_ctx_init
@@ -53,6 +43,14 @@ typedef struct
 } ngx_http_rpc_conf_t;
 
 extern ngx_module_t ngx_http_rpc_module;
+
+
+typedef struct {
+   ngx_str_t name;
+   void (*post_handler)(ngx_http_request_t *r);
+} method_conf_t;
+
+
 
 
 #endif

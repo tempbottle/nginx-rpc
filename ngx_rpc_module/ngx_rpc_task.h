@@ -2,6 +2,8 @@
 #define _NGX_RPC_TASK_H_
 
 #include <ngx_core.h>
+#include "ngx_rpc_notify.h"
+
 #define MAX_PATH_NAME 32
 // http key value
 typedef struct {
@@ -34,6 +36,7 @@ struct ngx_rpc_task_s {
     volatile ngx_uint_t refcount;
     ngx_slab_pool_t *pool;
     ngx_log_t * log;
+    ngx_rpc_notify_t *notify;
 
     // for sub request
     char interface[MAX_PATH_NAME];

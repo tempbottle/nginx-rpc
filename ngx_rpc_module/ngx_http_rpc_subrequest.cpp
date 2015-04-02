@@ -129,3 +129,19 @@ void ngx_http_rpc_subrequest_start(void *ctx, ngx_rpc_task_t *task)
     }
 }
 
+ngx_rpc_task_t* ngx_http_rpc_sub_request_task_init(ngx_http_request_t *r, void * ctx)
+{
+    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
+            ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
+
+    // 1 new process task
+    ngx_rpc_task_t* task = ngx_http_rpc_task_create(rpc_ctx->shpool, rpc_ctx);
+
+    task->ctx = ctx;
+    task->status = TASK_INIT;
+
+
+    // 2 copy the request bufs
+    return task;
+
+}
