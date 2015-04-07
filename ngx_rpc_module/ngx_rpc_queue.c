@@ -2,7 +2,7 @@
 
 ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool, int max_elem)
 {
-    ngx_rpc_queue_t *q = ngx_slab_alloc_locked(shpool, sizeof(ngx_rpc_queue_t));
+    ngx_rpc_queue_t *q = ngx_slab_alloc(shpool, sizeof(ngx_rpc_queue_t));
 
     if(q == NULL)
     {
@@ -14,7 +14,7 @@ ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool, int max_elem)
     q->pool = shpool;
 
     q->size = q->readidx = q->writeidx = 0;
-    q->elems = ngx_slab_alloc_locked(shpool, q->capacity * sizeof(task_elem_t));
+    q->elems = ngx_slab_alloc(shpool, q->capacity * sizeof(task_elem_t));
 
     if(q->elems == NULL)
     {
@@ -28,8 +28,8 @@ ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool, int max_elem)
 
 int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue)
 {
-    ngx_slab_free_locked(queue->pool, queue->elems);
-    ngx_slab_free_locked(queue->pool, queue);
+    ngx_slab_free(queue->pool, queue->elems);
+    ngx_slab_free(queue->pool, queue);
     return 0;
 }
 

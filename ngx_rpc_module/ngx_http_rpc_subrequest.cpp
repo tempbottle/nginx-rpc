@@ -86,19 +86,19 @@ ngx_int_t ngx_http_rpc_subrequest_done(ngx_http_request_t *r,
             req_chain->next = NULL;
         }
     }
-
-    task->filter = RpcChannel::finish_request;
+/*
+    task-> = RpcChannel::finish_request;
 
     ngx_http_rpc_dispatcher_task(task);
-
+*/
     return NGX_DONE;
 }
 
 
 void ngx_http_rpc_subrequest_start(void *ctx, ngx_rpc_task_t *task)
 {
-    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t*)ctx;
-    ngx_http_request_t* r = (ngx_http_request_t*)rpc_ctx->r;
+
+    /*ngx_http_request_t* r = (ngx_http_request_t*)rpc_ctx->r;
 
     ngx_http_post_subrequest_t *psr = (ngx_http_post_subrequest_t *)
             ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
@@ -115,7 +115,7 @@ void ngx_http_rpc_subrequest_start(void *ctx, ngx_rpc_task_t *task)
     r->request_body->bufs = &task->req_bufs;
     ngx_http_header_modify_content_length(r, task->res_length);
 
-    ngx_str_t forward = ngx_string(task->path);
+    ngx_str_t forward = ngx_string(task->interface);
 
     ngx_http_request_t *sr;
     ngx_int_t rc = ngx_http_subrequest(r, &forward, NULL, &sr, psr, NGX_HTTP_SUBREQUEST_IN_MEMORY);
@@ -127,21 +127,23 @@ void ngx_http_rpc_subrequest_start(void *ctx, ngx_rpc_task_t *task)
         //handler(this, req, res, NGX_HTTP_INTERNAL_SERVER_ERROR);
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
     }
+    */
 }
 
 ngx_rpc_task_t* ngx_http_rpc_sub_request_task_init(ngx_http_request_t *r, void * ctx)
 {
-    ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
-            ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
+
 
     // 1 new process task
-    ngx_rpc_task_t* task = ngx_http_rpc_task_create(rpc_ctx->shpool, rpc_ctx);
+    /*ngx_rpc_task_t* task = ngx_http_rpc_task_create(rpc_ctx->shpool, rpc_ctx);
 
-    task->ctx = ctx;
-    task->status = TASK_INIT;
+
 
 
     // 2 copy the request bufs
     return task;
+    */
+
+    return NULL;
 
 }

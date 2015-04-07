@@ -503,7 +503,7 @@ SOURCES += inspect_server/inspect.pb.h \
            thirdparty/protobuf/protobuf-master/src/google/protobuf/compiler/ruby/ruby_generator.h \
     ngx_rpc_module/ngx_http_rpc_subrequest.cpp \
     ngx_rpc_module/ngx_http_rpc.c
-SOURCES += bench/ngx_client.cpp \
+SOURCES += \
            inspect_server/inspect.pb.cc \
            inspect_server/ngx_http_inspect_module.cpp \
            ngx_rpc_module/ngx_log_cpp.cpp \

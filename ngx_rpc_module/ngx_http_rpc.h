@@ -19,18 +19,6 @@
 /// for rpc_task
 #include "ngx_rpc_task.h"
 
-ngx_rpc_task_t* ngx_http_rpc_post_request_task_init(ngx_http_request_t *r,void * ctx);
-
-///
-/// \brief ngx_http_rpc_ctx_init
-/// \param r
-/// \param ctx
-/// \return
-///
-ngx_http_rpc_ctx_t*  ngx_http_rpc_ctx_init(ngx_http_request_t *r, void *ctx);
-void ngx_http_rpc_ctx_finish_by_task(void *ctx);
-void ngx_http_rpc_ctx_free(void* ctx);
-
 
 
  // for rpc_conf and module
@@ -47,8 +35,9 @@ extern ngx_module_t ngx_http_rpc_module;
 
 typedef struct {
    ngx_str_t name;
-   void (*post_handler)(ngx_http_request_t *r);
+   void (*handler)(ngx_rpc_task_t *_this, void *p1);
 } method_conf_t;
+
 
 
 

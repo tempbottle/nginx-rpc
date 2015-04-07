@@ -11,4 +11,10 @@ ngx_rpc_task_t* ngx_http_rpc_sub_request_task_init(ngx_http_request_t *r, void *
 int ngx_http_header_modify_content_length(ngx_http_request_t *r, ngx_int_t value);
 void ngx_http_rpc_subrequest_start(void* ctx, ngx_rpc_task_t *task);
 void ngx_http_rpc_subrequest_done(void* ctx, ngx_rpc_task_t *task);
+
+
+
+// for client
+
+
 #endif

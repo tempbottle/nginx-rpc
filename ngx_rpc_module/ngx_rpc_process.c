@@ -13,7 +13,7 @@ typedef struct {
 
     ngx_uint_t                shm_size;
     ngx_uint_t                queue_capacity;
-    ngx_log_t *                log;
+    ngx_log_t*                log;
 
 } ngx_proc_rpc_conf_t;
 
@@ -23,25 +23,30 @@ typedef struct {
 static char * ngx_proc_rpc_set_shm_size(ngx_conf_t *cf,
                                         ngx_command_t *cmd, void *conf);
 
+static char * ngx_proc_rpc_set_log(ngx_conf_t *cf,
+                                        ngx_command_t *cmd, void *conf);
+
+
+
 static ngx_command_t ngx_proc_rpc_commands[] = {
 
-    { ngx_string("ngx_proc_rpc_queue_capacity"),
+    { ngx_string("ngx_proc_rpc_set_queue_capacity"),
       NGX_PROC_CONF | NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
       NGX_PROC_CONF_OFFSET,
       offsetof(ngx_proc_rpc_conf_t, queue_capacity),
       NULL },
 
-    { ngx_string("ngx_proc_rpc_shm_size"),
+    { ngx_string("ngx_proc_rpc_set_shm_size"),
       NGX_PROC_CONF|NGX_CONF_TAKE1,
       ngx_proc_rpc_set_shm_size,
       NGX_PROC_CONF_OFFSET,
       0,
       NULL },
 
-    { ngx_string("ngx_proc_rpc_log"),
+    { ngx_string("ngx_proc_rpc_set_log"),
       NGX_PROC_CONF|NGX_CONF_TAKE1,
-      ngx_proc_rpc_set_log_file,
+      ngx_proc_rpc_set_log,
       NGX_PROC_CONF_OFFSET,
       0,
       NULL },
@@ -104,15 +109,6 @@ int ngx_rpc_process_push_task(ngx_rpc_task_t *task)
 }
 
 
-static ngx_int_t ngx_proc_rpc_process_one_task(ngx_rpc_task_t * task)
-{
-    task_closure_exec(task);
-
-    ngx_http_rpc_task_ref_sub(task);
-
-    return NGX_OK;
-}
-
 
 static void ngx_proc_rpc_process_one_cycle(void * proc)
 {
@@ -133,22 +129,26 @@ static void ngx_proc_rpc_process_one_cycle(void * proc)
     ngx_shmtx_unlock(&notify->lock_task);
 
     ngx_queue_t *ptr = NULL;
+    ngx_rpc_task_t * task = NULL;
     for(ptr = task_nofity.next; ptr != &task_nofity; )
     {
         ngx_rpc_notify_task_t *t = ngx_queue_data(ptr, ngx_rpc_notify_task_t, next);
 
-        ngx_proc_rpc_process_one_task((ngx_rpc_task_t*)t->ctx);
+        task = (ngx_rpc_task_t *)t->ctx;
+        task_closure_exec(task);
+        ngx_http_rpc_task_ref_sub(task);
 
         ptr = ptr->next;
         ngx_slab_free_locked(notify->shpool, ptr);
     }
 
-    ngx_rpc_task_t * task = NULL;
+
     for( task = ngx_rpc_queue_pop(process->queue, process);
          task != NULL;
          task = ngx_rpc_queue_pop(process->queue, process))
     {
-        ngx_proc_rpc_process_one_task(task);
+        task_closure_exec(task);
+        ngx_http_rpc_task_ref_sub(task);
     }
 }
 
@@ -227,6 +227,14 @@ static char * ngx_proc_rpc_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void
 
 }
 
+static char *ngx_proc_rpc_set_log(ngx_conf_t *cf,
+                                        ngx_command_t *cmd, void *conf)
+{
+
+    ngx_log_error(NGX_LOG_INFO, cf->log, 0 , "ngx_proc_rpc_set_log ");
+     return NGX_CONF_OK;
+}
+
 
 static void *ngx_proc_rpc_create_loc_conf(ngx_conf_t *cf)
 {
@@ -244,10 +252,12 @@ static void *ngx_proc_rpc_create_loc_conf(ngx_conf_t *cf)
     conf->queue_capacity = NGX_CONF_UNSET_UINT;
 
     conf->shpool  = NULL;
-    conf->notify = NULL;
-    conf->queue = NULL;
+    conf->notify  = NULL;
+    conf->queue   = NULL;
+    conf->log     = NULL;
 
-    return  conf;
+    ngx_log_error(NGX_LOG_INFO, cf->log, 0 , "ngx_proc_rpc_create_loc_conf ");
+    return conf;
 }
 
 static char *ngx_proc_rpc_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
@@ -260,7 +270,10 @@ static char *ngx_proc_rpc_merge_loc_conf(ngx_conf_t *cf, void *parent, void *chi
     }
 
     if(rpc_conf->shm_size != NGX_CONF_UNSET_UINT)
+    {
+
         return NGX_CONF_OK;
+    }
 
     rpc_conf->shm_size = 4096*1024*256;
 
@@ -311,7 +324,7 @@ static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
     }
 
 
-     ngx_log_error(NGX_LOG_INFO,cycle->log, 0, "ngx_http_rpc_init_process done:");
+    ngx_log_error(NGX_LOG_INFO,cycle->log, 0, "ngx_http_rpc_init_process done, queue_capacity:%d shm_size:%d ",conf->queue_capacity, conf->shm_size);
 
     return 0;
 }

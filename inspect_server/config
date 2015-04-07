@@ -8,8 +8,8 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
     $ngx_addon_dir/inspect.pb.cc \
     $ngx_addon_dir/ngx_http_inspect_module.cpp "
 
-PROTO_INC="$ngx_addon_dir/../thirdparty/protobuf/4.9/include"
-PROTO_LIB="$ngx_addon_dir/../thirdparty/protobuf/4.9/lib"
+PROTO_INC="$ngx_addon_dir/../thirdparty/protobuf/include"
+PROTO_LIB="$ngx_addon_dir/../thirdparty/protobuf/lib"
 
 CORE_INCS="$CORE_INCS $ngx_addon_dir $ngx_addon_dir/../ $PROTO_INC"
 CORE_LIBS="$CORE_LIBS $PROTO_LIB/libprotobuf.a -static-libgcc -static-libstdc++ "

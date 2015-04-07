@@ -37,14 +37,14 @@ void ngx_http_rpc_task_destory(ngx_rpc_task_t *t){
     {
         ngx_chain_t * ptr = &t->req_bufs;
         for( ;ptr->buf != NULL;ptr= ptr->next)
-            ngx_slab_free(ptr->buf->start);
+            ngx_slab_free(pool, ptr->buf->start);
     }
 
     // free res_bufs
     {
         ngx_chain_t * ptr = &t->res_bufs;
         for( ;ptr->buf != NULL;ptr= ptr->next)
-            ngx_slab_free(ptr->buf->start);
+            ngx_slab_free(pool, ptr->buf->start);
     }
 
     // free task

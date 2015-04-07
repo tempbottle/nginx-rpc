@@ -1,6 +1,6 @@
 // C
 extern "C" {
-#include "ngx_http_rpc.h"
+    #include "ngx_http_rpc.h"
 }
 
 // for rpc server header
@@ -42,14 +42,22 @@ typedef struct
 } ngx_http_inspect_conf_t;
 
 
+// method closure
 static void ngxrpc_inspect_application_interface(ngx_rpc_task_t *_this, void *p1);
+
+static void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,RpcChannel *channel,
+                                                 const ::google::protobuf::Message* req,
+                                                 ::google::protobuf::Message* res,
+                                                 int result);
+
 static void ngxrpc_inspect_application_requeststatus(ngx_rpc_task_t *_this, void *p1);
 
-
+#define inspect_application_method_num  (sizeof(ngx_conf_set_inspect_application_methods)\
+                                           /sizeof(ngx_conf_set_inspect_application_methods[0]))
 
 static  method_conf_t ngx_conf_set_inspect_application_methods[] = {
      {ngx_string("/ngxrpc/inspect/application/interface"), ngxrpc_inspect_application_interface},
-     {ngx_string("/ngxrpc/inspect/application/requeststatus"), ngxrpc_inspect_application_interface}
+     {ngx_string("/ngxrpc/inspect/application/requeststatus"), ngxrpc_inspect_application_requeststatus}
 };
 
 static char *ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
@@ -63,6 +71,7 @@ static ngx_command_t ngx_http_inspect_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       0,
       NULL },
+
 
     { ngx_string("set_inspect_application_log"),
       NGX_HTTP_LOC_CONF | NGX_CONF_ANY,
@@ -88,7 +97,7 @@ static ngx_http_module_t ngx_http_inspect_module_ctx = {
     NULL,                /* merge server configuration */
 
     ngx_http_inspect_create_loc_conf,
-    /* create location configuration */
+                         /* create location configuration */
     NULL                 /* merge location configuration */
 };
 
@@ -144,21 +153,17 @@ static void* ngx_http_inspect_create_loc_conf(ngx_conf_t *cf)
 
 
     // 4 methodes
-    ngx_array_t* eles = ngx_array_create(cf->pool,
-                            sizeof(ngx_conf_set_inspect_application_methods)/sizeof(ngx_conf_set_inspect_application_methods[0]),
+    ngx_array_t* eles = ngx_array_create(cf->pool,inspect_application_method_num,
                             sizeof(ngx_hash_key_t));
 
-    ngx_hash_key_t *key = (ngx_hash_key_t *)ngx_array_push(eles);
 
-    // 0
-    key->key = ngx_conf_set_inspect_application_methods[0].name;
-    key->key_hash = ngx_hash_key_lc(key->key.data, key->key.len);
-    key->value = &(ngx_conf_set_inspect_application_methods[0]);
-
-    // 1
-    key->key = ngx_conf_set_inspect_application_methods[1].name;
-    key->key_hash = ngx_hash_key_lc(key->key.data, key->key.len);
-    key->value = &(ngx_conf_set_inspect_application_methods[1]);
+    for(unsigned int i = 0; i< inspect_application_method_num; ++i)
+    {
+        ngx_hash_key_t *key = (ngx_hash_key_t *)ngx_array_push(eles);
+        key->key = ngx_conf_set_inspect_application_methods[i].name;
+        key->key_hash = ngx_hash_key_lc(key->key.data, key->key.len);
+        key->value = &(ngx_conf_set_inspect_application_methods[i]);
+    }
 
 
     ngx_hash_init_t hash_init = {
@@ -166,12 +171,12 @@ static void* ngx_http_inspect_create_loc_conf(ngx_conf_t *cf)
         &ngx_hash_key_lc,
         4,
         64,
-        "application_methods",
+        (char*)"application_methods",
         cf->pool,
         NULL
     };
 
-    ngx_int_t ret = ngx_hash_init(&hash_init, (ngx_hash_key_t*)eles->elts, elements->nelts);
+    ngx_int_t ret = ngx_hash_init(&hash_init, (ngx_hash_key_t*)eles->elts, eles->nelts);
 
     if(ret != NGX_OK){
         ngx_array_destroy(eles);
@@ -179,10 +184,7 @@ static void* ngx_http_inspect_create_loc_conf(ngx_conf_t *cf)
     }
 
     conf->methods = hash_init.hash;
-
     ngx_array_destroy(eles);
-
-
     return conf;
 }
 
@@ -249,10 +251,34 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
     ngx_http_inspect_ctx_t *inspect_ctx = (ngx_http_inspect_ctx_t *)
             ngx_http_get_module_ctx(r, ngx_http_inspect_module);
 
-    ngx_rpc_task_t *task = ngx_http_rpc_post_request_task_init(r, inspect_ctx);
+    ngx_rpc_task_t* task = ngx_http_rpc_task_create(inspect_ctx->shpool, inspect_ctx->log);
 
-    task->closure.handler = inspect_ctx->mth->post_handler;
+    // 2 copy the request bufs
 
+    ngx_chain_t* req_chain = &task->req_bufs;
+    ngx_chain_t* c = NULL;
+
+    for( c= r->request_body->bufs; c; c=c->next )
+    {
+        int buf_size = c->buf->last - c->buf->pos;
+        req_chain->buf = (ngx_buf_t*)ngx_slab_alloc(inspect_ctx->shpool,
+                                                           sizeof(ngx_buf_t));
+
+        memcpy(c->buf, req_chain->buf,sizeof(ngx_buf_t));
+
+        req_chain->buf->pos = req_chain->buf->start =
+                (u_char*)ngx_slab_alloc(inspect_ctx->shpool, buf_size);
+
+        memcpy(c->buf->pos, req_chain->buf->pos,buf_size);
+        req_chain->next = (ngx_chain_t*)ngx_slab_alloc(inspect_ctx->shpool,
+                                                              sizeof(ngx_chain_t));
+        req_chain = req_chain->next;
+        req_chain->next = NULL;
+    }
+
+    task->closure.handler = inspect_ctx->mth->handler;
+
+    // 3 dispacher
     ngx_rpc_process_push_task(task);
 }
 
@@ -267,8 +293,6 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
 /// so this method just return the status
 static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
 {
-
-
     // 1 init the ctx
 
     ngx_http_inspect_conf_t *inspect_conf = (ngx_http_inspect_conf_t *)
@@ -285,11 +309,15 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    ngx_log_t *log_ptr = r->connection->log;
-    for(;log_ptr->next != NULL; log_ptr=log_ptr->next );
-    log_ptr->next = inspect_ctx->log;
+    if(inspect_conf->log->file)
+    {
+        ngx_log_t *log_ptr = r->connection->log;
+        for(;log_ptr->next != NULL; log_ptr=log_ptr->next );
+        log_ptr->next = inspect_conf->log;
+    }
 
-    // 0 find the hanlder
+
+    // 0 find the hanlder if not found termial the request
     method_conf_t *mth = (method_conf_t*) ngx_hash_find(
                 inspect_conf->methods,
                 ngx_hash_key_lc(r->uri.data, r->uri.len),
@@ -334,30 +362,21 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
 
         inspect_ctx->cntl = cntl;
         inspect_ctx->application_impl = inspect_conf->application_impl;
-        inspect_ctx->log = inspect_conf->log;
         inspect_ctx->shpool = rpc_conf->shpool;
         inspect_ctx->mth = mth;
+
+        inspect_ctx->log = inspect_conf->log->file== NULL ?
+                                 r->connection->log : inspect_conf->log;
 
         ngx_http_set_ctx(r, inspect_ctx, ngx_http_inspect_module);
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "ngx_http_inspect_http_handler init the inspect_ctx");
     }
 
-    // 2 init the ngx_http_rpc_module_ctx
-    if (ngx_http_get_module_ctx(r, ngx_http_rpc_module) == NULL)
-    {
-        ngx_http_rpc_ctx_t *rpc_ctx = ngx_http_rpc_ctx_init(r, inspect_ctx);
-        rpc_ctx->timeout_ms = ngx_current_msec;
-        rpc_ctx->log  = inspect_ctx->log;
-        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "ngx_http_inspect_http_handler init the rpc_ctx");
-    }
-
     // 2 forward to the post handler
     ngx_int_t rc = ngx_http_read_client_request_body(r, ngx_http_inspect_post_async_handler);
 
-
     ngx_log_error(NGX_LOG_WARN, r->connection->log, 0, "Method:%s,url:%V rc:%d!",
                   r->request_start, &(r->uri), rc);
-
 
     return rc;
 }
@@ -404,7 +423,7 @@ static void ngxrpc_inspect_application_interface(ngx_rpc_task_t* _this, void* p1
 void ngx_http_inspect_application_finish(void *ctx)
 {
     ngx_rpc_task_t* task = (ngx_rpc_task_t*) ctx;
-    ngx_http_inspect_ctx_t *inspect_ctx = (ngx_http_inspect_ctx_t *)p1;
+    ngx_http_inspect_ctx_t *inspect_ctx = (ngx_http_inspect_ctx_t *)task->closure.p1;
 
     ngx_http_request_t *r = inspect_ctx->r;
 
@@ -422,20 +441,16 @@ void ngx_http_inspect_application_finish(void *ctx)
 }
 
 
-void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,RpcChannel *channel,
+static void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,RpcChannel *channel,
                                                  const ::google::protobuf::Message* req,
                                                  ::google::protobuf::Message* res,
                                                  int result)
 {
-
-    ngx_http_request_t *r =(ngx_http_request_t *) channel->r;
-
     task->response_states = result;
-
     NgxShmChainBufferWriter writer(task->res_bufs, task->pool);
     res->SerializeToZeroCopyStream(&writer);
 
-    ngx_rpc_notify_task(task->notify, ngx_http_rpc_ctx_finish_by_task, task);
+    ngx_rpc_notify_task(task->notify, ngx_http_inspect_application_finish, task);
 }
 
 

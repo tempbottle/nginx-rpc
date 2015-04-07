@@ -34,8 +34,6 @@ thirdparty/tengine/tengine-master/Makefile: thirdparty/tengine/tengine-master/co
         --add-module=$(PWD)/inspect_server \
         --add-module=$(PWD)/ngx_rpc_module
 
-#        --add-module=$(PWD)/bench \
-#        --add-module=$(PWD)/bench \
 
 plugin: ngx_rpc_plugin/ngx_rpc_plugin.o  ngx_rpc_plugin/ngx_rpc_generator.o
 	g++ -o ngx_rpc_plugin/plugin ngx_rpc_plugin/ngx_rpc_generator.o ngx_rpc_plugin/ngx_rpc_plugin.o \
