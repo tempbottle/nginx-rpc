@@ -34,6 +34,7 @@ typedef struct {
     void(*wait)(void*, void *task);
 
     ngx_slab_pool_t *pool;
+    ngx_log_t* log;
 
     __attribute__((aligned(64)))
     ngx_atomic_t readidx;

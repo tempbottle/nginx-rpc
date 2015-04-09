@@ -60,7 +60,7 @@ public:
 
     ::google::protobuf::Message *req;
     ::google::protobuf::Message *res;
-    RpcCallHandler  currenthandler;
+    RpcCallHandler  done;
 };
 
 

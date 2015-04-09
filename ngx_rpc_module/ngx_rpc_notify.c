@@ -6,29 +6,35 @@
 static void ngx_rpc_notify_default_hanlder(void* dummy){}
 
 static void ngx_rpc_notify_read_handler(ngx_event_t *ev){
+
+
+    ngx_connection_t *notify_con = ev->data;
+    ngx_rpc_notify_t *notify = (ngx_rpc_notify_t *)(notify_con->sockaddr);
+
     ngx_log_debug(NGX_LOG_DEBUG_ALL, ev->log, 0,"ngx_event_hanlder_notify_read");
 
     //read and do all the work;
     ngx_int_t signal = 1;
-    ngx_rpc_notify_t * cn = ev->data;
 
     int ret = 0;
     do{
-        ret = read(cn->event_fd, (char*)&signal, sizeof(signal));
+        ret = read(notify->event_fd, (char*)&signal, sizeof(signal));
     }while(ret > 0);
 
-    ngx_rpc_notify_t *n = (ngx_rpc_notify_t *)ev->data;
-    n->read_hanlder(n->ctx);
+    notify->read_hanlder(notify->ctx);
 
 }
 
 static void ngx_rpc_notify_write_handler(ngx_event_t *ev)
 {
-    ngx_log_debug(NGX_LOG_DEBUG_ALL, ev->log, 0, "ngx_event_hanlder_notify_write");
-    ngx_del_event(ev, NGX_READ_EVENT, 0);
 
-    ngx_rpc_notify_t *n = (ngx_rpc_notify_t *)ev->data;
-    n->write_hanlder(n->ctx);
+    ngx_connection_t *notify_con = ev->data;
+    ngx_rpc_notify_t *notify = (ngx_rpc_notify_t *)(notify_con->sockaddr);
+
+    ngx_log_debug(NGX_LOG_DEBUG_ALL, ev->log, 0, "ngx_event_hanlder_notify_write");
+    ngx_del_event(notify_con->write, NGX_WRITE_EVENT, 0);
+
+    notify->write_hanlder(notify->ctx);
 }
 
 
@@ -44,14 +50,16 @@ ngx_rpc_notify_t *ngx_rpc_notify_create(ngx_slab_pool_t *shpool , void *ctx)
 
 
      notify->notify_conn->pool = NULL;
+     notify->notify_conn->sockaddr = (struct sockaddr *)notify;
+
 
      notify->notify_conn->read->handler = ngx_rpc_notify_read_handler;
      notify->notify_conn->read->log     = ngx_cycle->log;
-     notify->notify_conn->read->data    = notify;
+     notify->notify_conn->read->data    = notify->notify_conn;
 
      notify->notify_conn->write->handler = ngx_rpc_notify_write_handler;
      notify->notify_conn->write->log     = ngx_cycle->log;
-     notify->notify_conn->write->data    = notify;
+     notify->notify_conn->write->data    = notify->notify_conn;
 
      notify->read_hanlder = ngx_rpc_notify_default_hanlder;
      notify->write_hanlder = ngx_rpc_notify_default_hanlder;

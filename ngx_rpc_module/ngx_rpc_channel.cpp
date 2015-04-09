@@ -28,7 +28,7 @@ void RpcChannel::start_subrequest(const std::string& path,
 
     this->req = (::google::protobuf::Message*)req;
     this->res = res;
-    this->currenthandler = done;
+    this->done = done;
 
     // a new task
 

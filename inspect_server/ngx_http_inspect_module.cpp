@@ -72,7 +72,6 @@ static ngx_command_t ngx_http_inspect_commands[] = {
       0,
       NULL },
 
-
     { ngx_string("set_inspect_application_log"),
       NGX_HTTP_LOC_CONF | NGX_CONF_ANY,
       ngx_conf_set_inspect_application_log,
@@ -264,12 +263,13 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
         req_chain->buf = (ngx_buf_t*)ngx_slab_alloc(inspect_ctx->shpool,
                                                            sizeof(ngx_buf_t));
 
-        memcpy(c->buf, req_chain->buf,sizeof(ngx_buf_t));
+        memcpy(req_chain->buf, c->buf,sizeof(ngx_buf_t));
 
         req_chain->buf->pos = req_chain->buf->start =
                 (u_char*)ngx_slab_alloc(inspect_ctx->shpool, buf_size);
 
-        memcpy(c->buf->pos, req_chain->buf->pos,buf_size);
+        memcpy(req_chain->buf->pos,c->buf->pos, buf_size);
+
         req_chain->next = (ngx_chain_t*)ngx_slab_alloc(inspect_ctx->shpool,
                                                               sizeof(ngx_chain_t));
         req_chain = req_chain->next;
@@ -296,9 +296,10 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
     // 1 init the ctx
 
     ngx_http_inspect_conf_t *inspect_conf = (ngx_http_inspect_conf_t *)
-            ngx_http_conf_get_module_loc_conf(r, ngx_http_inspect_module);
+            ngx_http_get_module_loc_conf(r, ngx_http_inspect_module);
+
     ngx_http_rpc_conf_t *rpc_conf = (ngx_http_rpc_conf_t *)
-            ngx_http_conf_get_module_loc_conf(r, ngx_http_rpc_module);
+            ngx_http_get_module_main_conf(r, ngx_http_rpc_module);
 
     //2
     if(rpc_conf == NULL || rpc_conf->shpool == NULL)
@@ -353,14 +354,7 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
         p1->data = inspect_ctx;
         p1->handler = ngx_http_inspect_ctx_destroy;
 
-
-        RpcChannel *cntl =  new RpcChannel(r);
-
-        ngx_pool_cleanup_t *p2 = ngx_pool_cleanup_add(r->connection->pool, 0);
-        p2->data = cntl;
-        p2->handler = RpcChannel::destructor;
-
-        inspect_ctx->cntl = cntl;
+        inspect_ctx->cntl = NULL;
         inspect_ctx->application_impl = inspect_conf->application_impl;
         inspect_ctx->shpool = rpc_conf->shpool;
         inspect_ctx->mth = mth;
@@ -387,7 +381,10 @@ static void ngxrpc_inspect_application_interface(ngx_rpc_task_t* _this, void* p1
 {
      ngx_http_inspect_ctx_t *inspect_ctx = (ngx_http_inspect_ctx_t *)p1;
 
-     RpcChannel* cntl = inspect_ctx->cntl;
+
+
+     RpcChannel* cntl = new RpcChannel(inspect_ctx->r);
+
      cntl->task = _this;
      cntl->req  = new ngxrpc::inspect::Request();
 
@@ -404,8 +401,7 @@ static void ngxrpc_inspect_application_interface(ngx_rpc_task_t* _this, void* p1
      }
 
      cntl->res = new ngxrpc::inspect::Response();
-
-     RpcCallHandler done = std::bind(ngx_http_inspect_application_interface_done,
+     cntl->done =  std::bind(ngx_http_inspect_application_interface_done,
                                      _this,
                                      std::placeholders::_1,
                                      std::placeholders::_2,
@@ -415,7 +411,7 @@ static void ngxrpc_inspect_application_interface(ngx_rpc_task_t* _this, void* p1
      inspect_ctx->application_impl->interface(inspect_ctx->cntl,
                                  (ngxrpc::inspect::Request*)cntl->req,
                                  (ngxrpc::inspect::Response*)cntl->res,
-                                 done);
+                                 cntl->done);
 }
 
 
@@ -449,6 +445,11 @@ static void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,Rpc
     task->response_states = result;
     NgxShmChainBufferWriter writer(task->res_bufs, task->pool);
     res->SerializeToZeroCopyStream(&writer);
+
+    // clean the channel
+    delete channel->req;
+    delete channel->res;
+    delete channel;
 
     ngx_rpc_notify_task(task->notify, ngx_http_inspect_application_finish, task);
 }
