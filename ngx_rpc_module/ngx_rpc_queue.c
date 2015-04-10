@@ -22,8 +22,6 @@ ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool, int max_elem)
     }
 
     memset(q->elems, 0, q->capacity *sizeof(task_elem_t));
-
-
     return q;
 }
 
@@ -42,9 +40,8 @@ int ngx_rpc_queue_push(ngx_rpc_queue_t *queue, void* task)
 
 
     uint64_t left = queue->capacity - queue->size;
-    ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_push \
-                  queue:%p task:%p, left:%d, capacity:%, size:%d process_num:%", \
-                  queue, task, queue->capacity, queue->size , queue->process_num);
+    ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_push queue:%p task:%p, left:%d, capacity:%d, size:%d process_num:%d", \
+                  queue, task, left, queue->capacity, queue->size , queue->process_num);
 
     // left more than process
     if(left <= queue->process_num)
@@ -52,7 +49,7 @@ int ngx_rpc_queue_push(ngx_rpc_queue_t *queue, void* task)
         return 0;
     }
 
-    uint64_t pre_write = ngx_atomic_fetch_add(&queue->writeidx , 1)% queue->capacity;
+    uint64_t pre_write = ngx_atomic_fetch_add(&queue->writeidx , 1) % queue->capacity;
 
     task_elem_t * tmp = &(queue->elems[pre_write]);
 
@@ -63,8 +60,7 @@ int ngx_rpc_queue_push(ngx_rpc_queue_t *queue, void* task)
     if(pre_task == NULL)
     {
         ngx_atomic_fetch_add(&queue->size, 1);
-        ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_push only \
-                      pre_write:%d pre_task:%p, tmp:%p size:%d ", \
+        ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_push only pre_write:%d pre_task:%p, tmp:%p size:%d ", \
                       pre_write, pre_task, tmp->task, queue->size);
         return 1;
     }
@@ -84,8 +80,7 @@ int ngx_rpc_queue_push(ngx_rpc_queue_t *queue, void* task)
 
         ngx_atomic_fetch_add(&queue->size, 1);
 
-        ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_push and notify \
-                      pre_write:%d pre_task:%p, tmp:%p size:%d ", \
+        ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_push and notify pre_write:%d pre_task:%p, tmp:%p size:%d ",
                       pre_write, pre_task, tmp->task, queue->size);
         return 1;
     }
@@ -96,8 +91,8 @@ int ngx_rpc_queue_push(ngx_rpc_queue_t *queue, void* task)
     // a task has wait on this cell, restore
     while(! ngx_atomic_cmp_set(&tmp->task, (void*)((int64_t)task | NGX_WRITE_FLAG), pre_task))
     {
-        ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_push  slot busy \
-                      pre_write:%d pre_task:%p, tmp:%p size:%d ", \
+        ngx_log_error(NGX_LOG_INFO,queue->log, 0,
+                      "ngx_rpc_queue_push  slot busy pre_write:%d pre_task:%p, tmp:%p size:%d ",
                       pre_write, pre_task, tmp->task, queue->size);
         ngx_sched_yield();
     }
@@ -113,21 +108,21 @@ void* ngx_rpc_queue_pop(ngx_rpc_queue_t *queue, void *proc)
     {
         uint64_t pre_read = ngx_atomic_fetch_add(&(queue->readidx), 1) % queue->capacity;
 
-        task_elem_t *tmp = &(queue->elems[pre_read]);
+        task_elem_t *tmp = (queue->elems + pre_read);
 
         void* pre_task = ngx_atomic_swap_set((void**)&tmp->task, (void*)((int64_t)proc | NGX_READ_FLAG));
 
         // no task,
         if(pre_task == NULL && queue->size == 0)
         {
-            ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_pop wait \
-                          pre_read:%d pre_task:%p, proc:%p tmp:%p size:%d ", \
+            ngx_log_error(NGX_LOG_INFO,queue->log, 0,
+                          "ngx_rpc_queue_pop wait  pre_read:%d pre_task:%p, proc:%p tmp:%p size:%d ", \
                           pre_read, pre_task, proc, tmp->task, queue->size);
             return NULL;
         }
 
         // pre just set
-        if( (int64_t)(pre_task) & NGX_WRITE_FLAG)
+        if((int64_t)(pre_task) & NGX_WRITE_FLAG)
         {
             while( !ngx_atomic_cmp_set(&tmp->task, (void*)((int64_t)(proc) | NGX_READ_FLAG), NULL) )
             {
@@ -144,12 +139,12 @@ void* ngx_rpc_queue_pop(ngx_rpc_queue_t *queue, void *proc)
         }
 
         //this cell has a process wait move next;
-        while(! ngx_atomic_cmp_set(&tmp->task, (void*)((int64_t)tmp->task | NGX_WRITE_FLAG), pre_task))
+        while(! ngx_atomic_cmp_set(&tmp->task, (void*)((int64_t)tmp->task | NGX_READ_FLAG), pre_task))
         {
             ngx_sched_yield();
 
-            ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_pop busy \
-                          pre_read:%d pre_task:%p, proc:%p tmp:%p size:%d ", \
+            ngx_log_error(NGX_LOG_INFO,queue->log, 0,
+                          "ngx_rpc_queue_pop busy pre_read:%d pre_task:%p, proc:%p tmp:%p size:%d ",
                           pre_read, pre_task, proc, tmp->task, queue->size);
         }
     }

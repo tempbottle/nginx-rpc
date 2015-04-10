@@ -9,8 +9,8 @@
 #include <ngx_http.h>
 #include <ngx_log.h>
 
-#define NGX_WRITE_FLAG 0x1u
-#define NGX_READ_FLAG  0x2u
+#define NGX_WRITE_FLAG 0x1
+#define NGX_READ_FLAG  0x2
 #define ngx_atomic_swap_set(x,y) __sync_lock_test_and_set(x, y)
 
 
