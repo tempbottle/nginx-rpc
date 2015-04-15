@@ -47,52 +47,59 @@ static void ngx_rpc_notify_write_handler(ngx_event_t *ev)
 
 
 
-ngx_rpc_notify_t *ngx_rpc_notify_create(ngx_slab_pool_t *shpool , void *ctx)
+ngx_rpc_notify_t *ngx_rpc_notify_create(ngx_slab_pool_t *shpool)
 {
 
     ngx_rpc_notify_t *notify = ngx_slab_alloc(shpool, sizeof(ngx_rpc_notify_t));
+    notify->shpool = shpool;
 
-     notify->ctx = ctx;
-     notify->log = ngx_cycle->log;
-     notify->event_fd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
-     notify->notify_conn = ngx_get_connection(notify->event_fd, ngx_cycle->log);
+    notify->log = ngx_cycle->log;
+    notify->event_fd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
 
+    return notify;
+}
 
-     notify->notify_conn->pool = NULL;
-     notify->notify_conn->sockaddr = (struct sockaddr *)notify;
+ngx_rpc_notify_t* ngx_rpc_notify_init(ngx_rpc_notify_t *notify, void *ctx){
 
+    notify->ctx = ctx;
 
-     notify->notify_conn->read->handler = ngx_rpc_notify_read_handler;
-     notify->notify_conn->read->log     = ngx_cycle->log;
-     notify->notify_conn->read->data    = notify->notify_conn;
+    notify->notify_conn = ngx_get_connection(notify->event_fd, ngx_cycle->log);
 
-     notify->notify_conn->write->handler = ngx_rpc_notify_write_handler;
-     notify->notify_conn->write->log     = ngx_cycle->log;
-     notify->notify_conn->write->data    = notify->notify_conn;
-
-     notify->read_hanlder = ngx_rpc_notify_default_hanlder;
-     notify->write_hanlder = ngx_rpc_notify_default_hanlder;
+    notify->notify_conn->pool = NULL;
+    notify->notify_conn->sockaddr = (struct sockaddr *)notify;
 
 
-     if(ngx_shmtx_create(&notify->lock_task, &notify->psh, NULL) != NGX_OK)
-     {
-         return NULL;
-     }
+    notify->notify_conn->read->handler = ngx_rpc_notify_read_handler;
+    notify->notify_conn->read->log     = ngx_cycle->log;
+    notify->notify_conn->read->data    = notify->notify_conn;
 
-     if( ngx_add_conn(notify->notify_conn) != NGX_OK)
-     {
-         return NULL;
-     }
+    notify->notify_conn->write->handler = ngx_rpc_notify_write_handler;
+    notify->notify_conn->write->log     = ngx_cycle->log;
+    notify->notify_conn->write->data    = notify->notify_conn;
 
-     ngx_shmtx_lock(&notify->lock_task);
-     ngx_queue_init(&notify->task);
-     ngx_shmtx_unlock(&notify->lock_task);
+    notify->read_hanlder = ngx_rpc_notify_default_hanlder;
+    notify->write_hanlder = ngx_rpc_notify_default_hanlder;
 
-     ngx_log_debug(NGX_LOG_DEBUG_ALL, notify->log, 0,
-                   "ngx_rpc_notify_create notify:%p eventfd:%d",
-                   notify, notify->event_fd);
 
-     return notify;
+    if(ngx_shmtx_create(&notify->lock_task, &notify->psh, NULL) != NGX_OK)
+    {
+        return NULL;
+    }
+
+    if( ngx_add_conn(notify->notify_conn) != NGX_OK)
+    {
+        return NULL;
+    }
+
+    ngx_shmtx_lock(&notify->lock_task);
+    ngx_queue_init(&notify->task);
+    ngx_shmtx_unlock(&notify->lock_task);
+
+    ngx_log_debug(NGX_LOG_DEBUG_ALL, notify->log, 0,
+                  "ngx_rpc_notify_init notify:%p eventfd:%d",
+                  notify, notify->event_fd);
+
+    return notify;
 }
 
 int ngx_rpc_notify_destory(ngx_rpc_notify_t* notify)

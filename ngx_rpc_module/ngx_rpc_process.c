@@ -4,29 +4,12 @@
 #include "ngx_rpc_process.h"
 
 
-
-// every process has its memery
-typedef struct {
-    ngx_slab_pool_t           *shpool;
-    ngx_rpc_queue_t           *queue;
-    // every proc has a notify
-    ngx_rpc_notify_t          *notify_vec;
-    ngx_uint_t                proc_id;
-
-    ngx_uint_t                shm_size;
-    ngx_uint_t                queue_capacity;
-    ngx_log_t*                log;
-
-} ngx_proc_rpc_conf_t;
-
-
-
 /// commands
 static char * ngx_proc_rpc_set_shm_size(ngx_conf_t *cf,
                                         ngx_command_t *cmd, void *conf);
 
 static char * ngx_proc_rpc_set_log(ngx_conf_t *cf,
-                                        ngx_command_t *cmd, void *conf);
+                                   ngx_command_t *cmd, void *conf);
 
 
 
@@ -77,15 +60,16 @@ static ngx_proc_module_t ngx_proc_rpc_module_ctx = {
 };
 
 
-static void      ngx_proc_rpc_master_exit (ngx_cycle_t *cycle);
+static ngx_int_t  ngx_proc_rpc_master_init(ngx_cycle_t *cycle);
+static void  ngx_proc_rpc_master_exit (ngx_cycle_t *cycle);
 
 ngx_module_t ngx_proc_rpc_module = {
     NGX_MODULE_V1,
     &ngx_proc_rpc_module_ctx,
     ngx_proc_rpc_commands,
     NGX_PROC_MODULE,
-    NULL,
-    NULL,
+    NULL, // master NULL
+    ngx_proc_rpc_master_init, // init module called in master instead
     NULL,
     NULL,
     NULL,
@@ -117,11 +101,11 @@ static void ngx_proc_rpc_process_one_cycle(void * proc)
 {
 
     ngx_proc_rpc_conf_t *process= (ngx_proc_rpc_conf_t *)proc;
-    ngx_rpc_notify_t * notify = process->notify;
+    ngx_rpc_notify_t * notify = process->queue->notify_slot[process->proc_id];
 
     ngx_log_error(NGX_LOG_DEBUG, notify->log, 0,
-                  "ngx_proc_rpc_process_one_cycle proc:%p queue:%p notify:%p ",
-                  process , process->queue, notify);
+                  "ngx_proc_rpc_process_one_cycle proc:%p queue:%p id:%d ",
+                  process , process->queue,process->proc_id);
 
     ngx_queue_t* task_nofity = NULL;
 
@@ -174,16 +158,21 @@ static void ngx_proc_rpc_process_one_cycle(void * proc)
 
 
 static void ngx_proc_rpc_wait_task(void * proc, void *task){
+
+    ngx_proc_rpc_conf_t *process= (ngx_proc_rpc_conf_t *)proc;
     // do nothing
+    ngx_log_error(NGX_LOG_DEBUG, process->log, 0, "ngx_proc_rpc_wait_task ngx_proc_rpc_conf_t:%p id:%d", process, process->proc_id);
 }
 
 static void ngx_proc_rpc_notify_task(void * proc, void *task)
 {
     ngx_proc_rpc_conf_t *p = (ngx_proc_rpc_conf_t *) proc;
     ngx_rpc_task_t* t = (ngx_rpc_task_t*)task;
-    ngx_rpc_notify_task(p->notify, NULL, t);
-    ngx_log_error(NGX_LOG_DEBUG, p->log, 0, "ngx_proc_rpc_notify_task ngx_proc_rpc_conf_t:%p notify:%p task:%p, refcount:%d", p, p->notify, t, t->refcount);
+    ngx_rpc_notify_t * notify = p->queue->notify_slot[p->proc_id];
 
+    ngx_log_error(NGX_LOG_DEBUG, p->log, 0, "ngx_proc_rpc_notify_task ngx_proc_rpc_conf_t:%p id:%d task:%p, refcount:%d", p, p->proc_id, t, t->refcount );
+
+    ngx_rpc_notify_task(notify, NULL, t);
 }
 
 
@@ -212,16 +201,6 @@ static ngx_int_t ngx_proc_rpc_init_zone(ngx_shm_zone_t *shm_zone, void *data)
 
     ctx->shpool = (ngx_slab_pool_t *) shm_zone->shm.addr;
     ctx->shpool->data = ctx;
-
-    ctx->queue = ngx_rpc_queue_create(ctx->shpool, ctx->queue_capacity);
-    ctx->queue->log = shm_zone->shm.log;
-    ctx->queue->notify = ngx_proc_rpc_notify_task;
-    ctx->queue->wait = ngx_proc_rpc_wait_task;
-
-
-    ngx_log_error(NGX_LOG_INFO, shm_zone->shm.log, 0 , "ngx_proc_rpc_init_zone, \
-                  conf:%p, queue:%p,queue_capacity:%d ",
-                  ctx, ctx->queue, ctx->queue_capacity);
 
     return NGX_OK;
 }
@@ -255,9 +234,6 @@ static char * ngx_proc_rpc_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void
     shm_zone->init = ngx_proc_rpc_init_zone;
     shm_zone->data = c;
 
-
-
-
     ngx_log_error(NGX_LOG_INFO, cf->log, 0 , "ngx_proc_rpc_set_shm_size %d , \
                   conf:%p, queue:%p,queue_capacity:%d ",
                   size, c, c->queue, c->queue_capacity);
@@ -267,7 +243,7 @@ static char * ngx_proc_rpc_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void
 }
 
 static char *ngx_proc_rpc_set_log(ngx_conf_t *cf,
-                                        ngx_command_t *cmd, void *conf)
+                                  ngx_command_t *cmd, void *conf)
 {
 
     ngx_log_error(NGX_LOG_INFO, cf->log, 0 , "ngx_proc_rpc_set_log ");
@@ -291,7 +267,6 @@ static void *ngx_proc_rpc_create_loc_conf(ngx_conf_t *cf)
     conf->queue_capacity = NGX_CONF_UNSET_UINT;
 
     conf->shpool  = NULL;
-    conf->notify  = NULL;
     conf->queue   = NULL;
     conf->log     = cf->log;
 
@@ -339,39 +314,46 @@ static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
     if(conf == NULL)
         return NGX_OK;
 
-    conf->notify = ngx_rpc_notify_create(conf->shpool, conf);
+    conf->proc_id = ngx_rpc_queue_init_per_process(conf->queue,
+                                                   ngx_proc_rpc_process_one_cycle,
+                                                   ngx_proc_rpc_process_one_cycle,
+                                                   conf);
 
-    if(0 == conf->notify)
-    {
-        return NGX_ERROR;
-    }
-
-    conf->notify->shpool = conf->shpool;
-    conf->notify->log    = conf->log;
-
-    conf->notify->read_hanlder = ngx_proc_rpc_process_one_cycle;
-    conf->notify->write_hanlder = ngx_proc_rpc_process_one_cycle;
-    conf->notify->ctx = conf;
 
     ngx_log_error(NGX_LOG_INFO,cycle->log, 0,
-                  "ngx_http_rpc_init_process done, queue_capacity:%d shm_size:%d conf:%p notify:%p queue:%p",
-                  conf->queue_capacity, conf->shm_size, conf, conf->notify, conf->queue);
+                  "ngx_http_rpc_init_process done, queue_capacity:%d shm_size:%d conf:%p proc_id:%p queue:%p",
+                  conf->queue_capacity, conf->shm_size, conf, conf->proc_id, conf->queue);
 
     return 0;
 }
 
 static void ngx_proc_rpc_process_exit(ngx_cycle_t *cycle)
 {
-
     ngx_proc_rpc_conf_t * conf =  ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
-
-    if(conf)
-    {
-        ngx_log_error(NGX_LOG_INFO, cycle->log, 0, "ngx_proc_rpc_process_exit conf:%p notify:%p", conf, conf->notify);
-        ngx_rpc_notify_destory(conf->notify);
-    }
+    ngx_log_error(NGX_LOG_INFO, cycle->log, 0, " ngx_proc_rpc_process_exit proc_id:%d", conf->proc_id);
 }
 
+
+static ngx_int_t  ngx_proc_rpc_master_init(ngx_cycle_t *cycle)
+{
+    ngx_proc_rpc_conf_t * conf =  ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
+
+    if(conf == NULL)
+    {
+        ngx_log_error(NGX_LOG_INFO, cycle->log, 0, "Not used ngx_proc_rpc");
+        return NGX_OK;
+    }
+
+    conf->queue = ngx_rpc_queue_create(conf->shpool, conf->queue_capacity);
+    conf->queue->log = cycle->log;
+    conf->queue->notify = ngx_proc_rpc_notify_task;
+    conf->queue->wait = ngx_proc_rpc_wait_task;
+
+    ngx_log_error(NGX_LOG_INFO, cycle->log, 0 , "ngx_proc_rpc_init_zone, \
+                  conf:%p, queue:%p,queue_capacity:%d ",
+                  conf, conf->queue, conf->queue_capacity);
+    return NGX_OK;
+}
 
 static void  ngx_proc_rpc_master_exit (ngx_cycle_t *cycle){
 

@@ -6,7 +6,7 @@
 #include <ngx_http.h>
 #include <ngx_log.h>
 
-#include "ngx_rpc_notify.h"
+
 
 #include "ngx_rpc_queue.h"
 
@@ -24,9 +24,8 @@
  // for rpc_conf and module
 typedef struct
 {
-    ngx_uint_t shm_size;
-    ngx_slab_pool_t  *shpool;
-    ngx_rpc_notify_t *notify;
+    ngx_rpc_queue_t *queue;
+    ngx_rpc_notify_t * nofity;
 
 } ngx_http_rpc_conf_t;
 

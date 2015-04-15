@@ -12,8 +12,9 @@ extern "C" {
 
 
 typedef struct {
-    ngx_slab_pool_t *shpool;
-    ngx_rpc_notify_t *notify;
+    ngx_rpc_queue_t* queue;
+    int proc_id;
+
     ngx_log_t *log;
 
     ngx_http_request_t *r;
@@ -29,7 +30,7 @@ static void ngx_http_inspect_ctx_destroy(void* ctx){
 
     ngx_http_inspect_ctx_t *c = (ngx_http_inspect_ctx_t *)ctx;
     ngx_log_error(NGX_LOG_DEBUG, c->log, 0, "free the ngx_http_inspect_ctx_t:%p", ctx);
-    ngx_slab_free(c->shpool ,c);
+    ngx_slab_free(c->queue->pool ,c);
 }
 
 typedef struct
@@ -250,7 +251,10 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
     ngx_http_inspect_ctx_t *inspect_ctx = (ngx_http_inspect_ctx_t *)
             ngx_http_get_module_ctx(r, ngx_http_inspect_module);
 
-    ngx_rpc_task_t* task = ngx_http_rpc_task_create(inspect_ctx->shpool, inspect_ctx->log);
+    ngx_rpc_task_t* task = ngx_http_rpc_task_create(inspect_ctx->queue->pool, inspect_ctx->log);
+
+    task->log = inspect_ctx->log;
+    task->notify = inspect_ctx->queue->notify_slot[inspect_ctx->proc_id];
 
     // 2 copy the request bufs
 
@@ -260,17 +264,17 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
     for( c= r->request_body->bufs; c; c=c->next )
     {
         int buf_size = c->buf->last - c->buf->pos;
-        req_chain->buf = (ngx_buf_t*)ngx_slab_alloc(inspect_ctx->shpool,
+        req_chain->buf = (ngx_buf_t*)ngx_slab_alloc(inspect_ctx->queue->pool,
                                                            sizeof(ngx_buf_t));
 
         memcpy(req_chain->buf, c->buf,sizeof(ngx_buf_t));
 
         req_chain->buf->pos = req_chain->buf->start =
-                (u_char*)ngx_slab_alloc(inspect_ctx->shpool, buf_size);
+                (u_char*)ngx_slab_alloc(inspect_ctx->queue->pool, buf_size);
 
         memcpy(req_chain->buf->pos,c->buf->pos, buf_size);
 
-        req_chain->next = (ngx_chain_t*)ngx_slab_alloc(inspect_ctx->shpool,
+        req_chain->next = (ngx_chain_t*)ngx_slab_alloc(inspect_ctx->queue->pool,
                                                               sizeof(ngx_chain_t));
         req_chain = req_chain->next;
         req_chain->next = NULL;
@@ -302,7 +306,7 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
             ngx_http_get_module_main_conf(r, ngx_http_rpc_module);
 
     //2
-    if(rpc_conf == NULL || rpc_conf->shpool == NULL)
+    if(rpc_conf == NULL || rpc_conf->queue->pool == NULL)
     {
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
                       "Method:%s,url:%V rpc_conf:%p!",
@@ -339,7 +343,7 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
     {
         //do something
         inspect_ctx = (ngx_http_inspect_ctx_t *) ngx_slab_alloc(
-                    rpc_conf->shpool, sizeof(ngx_http_inspect_ctx_t));
+                    rpc_conf->queue->pool, sizeof(ngx_http_inspect_ctx_t));
 
         if(inspect_ctx == NULL)
         {
@@ -349,6 +353,9 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
+        inspect_ctx->queue = rpc_conf->queue;
+        inspect_ctx->proc_id = rpc_conf->proc_id;
+
         // the destructor of ngx_http_inspect_ctx_t
         ngx_pool_cleanup_t *p1 = ngx_pool_cleanup_add(r->connection->pool, 0);
         p1->data = inspect_ctx;
@@ -356,7 +363,7 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
 
         inspect_ctx->cntl = NULL;
         inspect_ctx->application_impl = inspect_conf->application_impl;
-        inspect_ctx->shpool = rpc_conf->shpool;
+
         inspect_ctx->mth = mth;
 
         inspect_ctx->log = inspect_conf->log->file== NULL ?
@@ -450,6 +457,7 @@ static void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,Rpc
     delete channel->req;
     delete channel->res;
     delete channel;
+
 
     ngx_rpc_notify_task(task->notify, ngx_http_inspect_application_finish, task);
 }

@@ -46,7 +46,9 @@ typedef struct {
 // handler for event fd
 
 
-ngx_rpc_notify_t* ngx_rpc_notify_create(ngx_slab_pool_t *shpool , void *ctx);
+ngx_rpc_notify_t* ngx_rpc_notify_create(ngx_slab_pool_t *shpool );
+ngx_rpc_notify_t* ngx_rpc_notify_init(ngx_rpc_notify_t *notify , void*ctx);
+
 
 int ngx_rpc_notify_destory(ngx_rpc_notify_t* notify);
 
