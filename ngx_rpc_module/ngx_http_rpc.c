@@ -5,7 +5,6 @@
 /* Commands */
 static ngx_command_t  ngx_http_rpc_module_commands[] = {
 
-
     ngx_null_command
 };
 
@@ -65,42 +64,32 @@ ngx_module_t  ngx_http_rpc_module = {
 static void ngx_http_rpc_process_notify_task(void *ctx)
 {
     ngx_http_rpc_conf_t *conf = (ngx_http_rpc_conf_t *) ctx;
+    ngx_rpc_task_queue_t* queue = conf->done_queue;
 
-    ngx_rpc_notify_t *notify = conf->queue->notify_slot[conf->proc_id];
+    ngx_queue_t* pending = NULL;
 
-    ngx_log_error(NGX_LOG_DEBUG, notify->log, 0,
-                  "ngx_proc_rpc_process_one_cycle proc:%p queue:%p notify:%p proc_id:%d ",
-                  conf , conf->queue, notify, conf->proc_id);
+    ngx_shmtx_lock(&queue->next_lock);
 
-    ngx_queue_t* task_nofity = NULL;
-    ngx_shmtx_lock(&notify->lock_task);
-    if(!ngx_queue_empty(&notify->task))
+    if(!ngx_queue_empty(queue->next))
     {
-        // swap notify->task and task_nofity
-        task_nofity = notify->task.next;
-        task_nofity->prev = notify->task.prev;
-        task_nofity->prev->next = task_nofity;
+        pending = queue->next.next;
 
-        ngx_queue_init(&notify->task);
+        ngx_queue_remove(queue->next);
+        ngx_queue_init(queue->next);
     }
 
-    ngx_shmtx_unlock(&notify->lock_task);
+    ngx_log_error(NGX_LOG_INFO, conf->log, 0,
+                  "ngx_http_rpc_process_notify_task conf:%p queue:%p ",conf ,queue);
+    ngx_shmtx_unlock(&queue->next_lock);
 
-    ngx_queue_t *ptr = task_nofity;
-    for(; ptr != task_nofity; ptr = ptr->next)
+    for( pending->prev->next = NULL ;
+         pending != NULL;
+         pending = pending->next)
     {
-
-        ngx_rpc_notify_task_t *t = ngx_queue_data(ptr, ngx_rpc_notify_task_t, next);
-
-        ngx_rpc_task_t * task = (ngx_rpc_task_t *)t->ctx;
-        task_closure_exec(task);
-        ngx_http_rpc_task_ref_sub(task);
-
-        ngx_log_error(NGX_LOG_DEBUG, notify->log, 0,
-                      "process task_nofity ngx_rpc_notify_task_t:%p task:%p, refcount:%d",
-                      t, task, task->refcount);
-
-        ngx_slab_free(notify->shpool, ptr->prev);
+        ngx_rpc_task_t *task = ngx_queue_data(pending, ngx_rpc_task_t, done);
+        task->finish.handler(task->finish.p1);
+        ngx_log_error(NGX_LOG_INFO, conf->log, 0,
+                      "ngx_http_rpc_process_notify_task conf:%p queue:%p task:%p", conf, queue, pending);
     }
 }
 
@@ -115,7 +104,8 @@ static void* ngx_http_rpc_create_main_conf(ngx_conf_t *cf)
     }
 
     conf->queue = NULL;
-    conf->proc_id = 0;
+    conf->done_queue = NULL;
+    conf->notify  = NULL;
 
     ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "ngx_http_rpc_create_srv_conf :%p", conf);
     return conf;
@@ -127,21 +117,24 @@ static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle)
     ngx_http_rpc_conf_t *rpc_conf =
             ngx_http_cycle_get_module_main_conf(cycle, ngx_http_rpc_module);
 
-    ngx_proc_rpc_conf_t * proc_conf =  ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
-
-    ngx_log_error(NGX_LOG_WARN,cycle->log, 0, "ngx_http_rpc_init_process conf:%p", rpc_conf);
+    ngx_proc_rpc_conf_t *proc_conf =  ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
 
     if(rpc_conf == NULL || proc_conf == NULL)
         return NGX_OK;
 
-    rpc_conf->queue  = proc_conf->queue;
+    rpc_conf->proc_queue = proc_conf->queue;
 
-    rpc_conf->proc_id = ngx_rpc_queue_init_per_process(rpc_conf->queue,
-                                                       ngx_http_rpc_process_notify_task,
-                                                       ngx_http_rpc_process_notify_task, rpc_conf);
+    rpc_conf->done_queue = ngx_http_rpc_task_queue_create(rpc_conf->proc_queue->pool);
 
-    ngx_log_error(NGX_LOG_WARN,cycle->log, 0, "ngx_http_rpc_init_process rpc_conf:%p queue:%p id:%d",
-                  rpc_conf, rpc_conf->queue, rpc_conf->proc_id);
+    rpc_conf->notify =  ngx_rpc_queue_add_current_consumer(rpc_conf->proc_queue);
+
+    rpc_conf->notify->read_hanlder = ngx_http_rpc_process_notify_task;
+    rpc_conf->notify->write_hanlder = ngx_http_rpc_process_notify_task;
+    rpc_conf->notify->ctx = rpc_conf;
+
+    ngx_log_error(NGX_LOG_WARN,cycle->log, 0,
+                  "ngx_http_rpc_init_process rpc_conf:%p queue:%p notify:%p done_queue:%p",
+                  rpc_conf, rpc_conf->proc_queue, rpc_conf->notify, rpc_conf->done_queue);
     return NGX_OK;
 }
 
@@ -150,6 +143,8 @@ static void ngx_http_rpc_exit_process(ngx_cycle_t *cycle)
 {
     ngx_http_rpc_conf_t *conf =
             ngx_http_cycle_get_module_main_conf(cycle, ngx_http_rpc_module);
+
+    ngx_http_rpc_task_queue_destory(conf->done_queue);
 
     ngx_log_error(NGX_LOG_WARN,cycle->log, 0, "ngx_http_rpc_exit_process conf:%p",conf);
 }

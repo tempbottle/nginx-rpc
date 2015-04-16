@@ -12,9 +12,7 @@ extern "C" {
 
 
 typedef struct {
-    ngx_rpc_queue_t* queue;
-    int proc_id;
-
+    ngx_http_rpc_conf_t*  rpc_conf;
     ngx_log_t *log;
 
     ngx_http_request_t *r;
@@ -148,8 +146,6 @@ static void* ngx_http_inspect_create_loc_conf(ngx_conf_t *cf)
     conf->log = (ngx_log_t*)ngx_pcalloc(cf->pool, sizeof(ngx_log_t));
     memset(conf->log, 0, sizeof(ngx_log_t));
 
-    ngx_log_error(NGX_LOG_INFO, conf->log, 0, "ngx_http_inspect_create_loc_conf initi log");
-    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "ngx_http_inspect_create_loc_conf done");
 
 
     // 4 methodes
@@ -185,6 +181,11 @@ static void* ngx_http_inspect_create_loc_conf(ngx_conf_t *cf)
 
     conf->methods = hash_init.hash;
     ngx_array_destroy(eles);
+    for(unsigned int i = 0; i< inspect_application_method_num; ++i)
+    {
+         ngx_log_error(NGX_LOG_INFO, conf->log, 0, "ngx_http_inspect_create_loc_conf add:%V",
+                  ngx_conf_set_inspect_application_methods[i].name);
+    }
     return conf;
 }
 
@@ -196,7 +197,9 @@ static char *ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_comman
 {
     ngx_http_inspect_conf_t *c = (ngx_http_inspect_conf_t*) conf;
 
+    // add some conf
     c->application_impl = new ngxrpc::inspect::ApplicationServer();
+
     // Add some init
 
     ngx_http_core_loc_conf_t *clcf = (ngx_http_core_loc_conf_t *)
@@ -204,7 +207,8 @@ static char *ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_comman
 
     clcf->handler = ngx_http_inspect_http_handler;
 
-    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "ngx_conf_set_inspect_application_hanlder done");
+    ngx_log_error(NGX_LOG_INFO, cf->log, 0,
+                       "ngx_conf_set_inspect_application_hanlder for ngxrpc::inspect::ApplicationServer");
 
     return NGX_OK;
 }
@@ -220,11 +224,9 @@ static char *ngx_conf_set_inspect_application_log(ngx_conf_t *cf, ngx_command_t 
     inspect_conf->log->log_level = NGX_DEBUG;
 
     ngx_log_error(NGX_LOG_INFO, inspect_conf->log, 0, "ngx_conf_set_inspect_application_log init");
-
-    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "ngx_conf_set_inspect_application_log done");
-
     return NGX_OK;
 }
+
 
 static void ngx_inspect_process_exit(ngx_cycle_t* cycle)
 {
@@ -306,10 +308,10 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
             ngx_http_get_module_main_conf(r, ngx_http_rpc_module);
 
     //2
-    if(rpc_conf == NULL || rpc_conf->queue->pool == NULL)
+    if(rpc_conf == NULL || rpc_conf->proc_queue == NULL)
     {
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                      "Method:%s,url:%V rpc_conf:%p!",
+                      "Method:%s,url:%V rpc_conf:%p !",
                       r->request_start, &(r->uri), rpc_conf);
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -343,7 +345,7 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
     {
         //do something
         inspect_ctx = (ngx_http_inspect_ctx_t *) ngx_slab_alloc(
-                    rpc_conf->queue->pool, sizeof(ngx_http_inspect_ctx_t));
+                    rpc_conf->proc_queue->pool, sizeof(ngx_http_inspect_ctx_t));
 
         if(inspect_ctx == NULL)
         {
@@ -353,8 +355,8 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        inspect_ctx->queue = rpc_conf->queue;
-        inspect_ctx->proc_id = rpc_conf->proc_id;
+        inspect_ctx->rpc_conf = rpc_conf;
+
 
         // the destructor of ngx_http_inspect_ctx_t
         ngx_pool_cleanup_t *p1 = ngx_pool_cleanup_add(r->connection->pool, 0);
@@ -387,8 +389,6 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
 static void ngxrpc_inspect_application_interface(ngx_rpc_task_t* _this, void* p1)
 {
      ngx_http_inspect_ctx_t *inspect_ctx = (ngx_http_inspect_ctx_t *)p1;
-
-
 
      RpcChannel* cntl = new RpcChannel(inspect_ctx->r);
 

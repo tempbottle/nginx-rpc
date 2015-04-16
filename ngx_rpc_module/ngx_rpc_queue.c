@@ -1,76 +1,57 @@
 #include "ngx_rpc_queue.h"
 
-ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool, int max_elem)
+ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool)
 {
     ngx_rpc_queue_t *q = ngx_slab_alloc(shpool, sizeof(ngx_rpc_queue_t));
 
     if(q == NULL)
     {
-        return NULL;
+         return NULL;
     }
 
-    q->capacity = max_elem;
     q->pool = shpool;
+    q->log = ngx_cycle->log;
 
-    q->proc_num = 0;
-
-
-    // ever proc has a notify
-    q->notify_slot = ngx_slab_alloc(shpool, (ngx_ncpu +1 )* sizeof(ngx_rpc_notify_t*));
-    q->notify_slot[ngx_ncpu] = NULL;
-
-    int i = 0;
-    for(i = 0; i <ngx_ncpu; i++ )
+    if(ngx_shmtx_create(&q->procs_lock, &q->procs_sh, NULL) != NGX_OK)
     {
-        q->notify_slot[i] = ngx_rpc_notify_create(q->pool);
-    }
-
-    q->size = q->readidx = q->writeidx = 0;
-    q->elems = ngx_slab_alloc(shpool, q->capacity * sizeof(task_elem_t));
-
-    if(q->elems == NULL)
-    {
+        ngx_slab_free(shpool, q);
         return NULL;
     }
 
-    memset(q->elems, 0, q->capacity *sizeof(task_elem_t));
+    ngx_queue_init(idles);
+
+    q->producer = ngx_rpc_notify_create(shpool);
+    q->consumer = ngx_rpc_notify_create(shpool);
+
+    gx_log_error(NGX_LOG_DEBUG, ngx_cycle->log, 0,
+                 "ngx_rpc_queue_create queue:%p producer:%d consumer:%d",
+                 q, q->producer->event_fd , q->consumer->event_fd);
+
     return q;
 }
 
-int ngx_rpc_queue_init_per_process(ngx_rpc_queue_t *queue,
-                                   void(*read_hanlder)(void* ),
-                                   void(*write_hanlder)(void* ), void * notify_ctx)
+
+ngx_rpc_notify_t *ngx_rpc_queue_add_current_producer(ngx_rpc_queue_t *queue)
 {
-
-    int proc_id = ngx_atomic_fetch_add(&queue->proc_num, 1);
-
-    ngx_rpc_notify_t * ptr = queue->notify_slot[proc_id];
-    ngx_rpc_notify_init(ptr, notify_ctx);
-
-    ptr->read_hanlder = read_hanlder;
-    ptr->write_hanlder = write_hanlder;
-
-
-    ngx_log_error(NGX_LOG_DEBUG, ngx_cycle->log, 0,
-                  "ngx_rpc_queue_init_per_process proc_id:%d notify:%p", proc_id, ptr);
-
-    queue->notify_slot[proc_id]= ptr;
-
-    return proc_id;
+     ngx_rpc_notify_init(p->notify, p);
+     return queue->producer;
 }
+
+ngx_rpc_notify_t *ngx_rpc_queue_add_current_consumer(ngx_rpc_queue_t *queue)
+{
+    ngx_rpc_notify_init(p->notify, p);
+    return  queue->consumer;
+}
+
+
 
 int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue)
 {
     ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_destory queue:%p ngx_ncpu", queue);
 
-    int i = 0;
-    for( ; i < ngx_ncpu ; ++i )
-    {
-       ngx_slab_free(queue->pool,  queue->notify_slot[i]);
-    }
+    ngx_rpc_notify_destory(queue->producer);
+    ngx_rpc_notify_destory(queue->consumer);
 
-    ngx_slab_free(queue->pool, queue->notify_slot);
-    ngx_slab_free(queue->pool, queue->elems);
     ngx_slab_free(queue->pool, queue);
     return 0;
 }

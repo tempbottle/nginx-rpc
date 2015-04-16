@@ -22,7 +22,7 @@ typedef struct {
 
 #define task_closure_exec(t) t->closure.handler(t, t->closure.p1)
 
-
+///
 typedef struct {
     int line;
     const char* fun;
@@ -31,12 +31,26 @@ typedef struct {
     ngx_uint_t done_ms;
 } task_metric_t ;
 
+
+///
+typedef struct {
+    ngx_slab_pool_t *pool;
+
+    ngx_queue_t next;
+    ngx_shmtx_sh_t next_sh;
+    ngx_shmtx_t next_lock;
+} ngx_rpc_task_queue_t;
+
+
+///
 struct ngx_rpc_task_s {
 
     volatile ngx_uint_t refcount;
     ngx_slab_pool_t *pool;
     ngx_log_t * log;
-    ngx_rpc_notify_t *notify;
+
+    ngx_queue_t done;
+    ngx_rpc_task_queue_t *done_queue;
 
     // for sub request
     char interface[MAX_PATH_NAME];
@@ -49,6 +63,8 @@ struct ngx_rpc_task_s {
 
     // closure
     task_closure_t closure;
+    task_closure_t finish;
+
 
     // mertics
     int response_states;
@@ -96,11 +112,12 @@ struct ngx_rpc_task_s {
 
 ngx_rpc_task_t *ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log);
 
-
 void ngx_http_rpc_task_destory(ngx_rpc_task_t *t);
 
 
 
+ngx_rpc_task_queue_t *ngx_http_rpc_task_queue_create(ngx_slab_pool_t *pool);
+void ngx_http_rpc_task_queue_destory(ngx_rpc_task_queue_t *q);
 
 
 #endif
