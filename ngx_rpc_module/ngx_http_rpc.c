@@ -70,24 +70,27 @@ static void ngx_http_rpc_process_notify_task(void *ctx)
 
     ngx_shmtx_lock(&queue->next_lock);
 
-    if(!ngx_queue_empty(queue->next))
+    if(!ngx_queue_empty(&queue->next))
     {
         pending = queue->next.next;
 
-        ngx_queue_remove(queue->next);
-        ngx_queue_init(queue->next);
+        ngx_queue_remove(&queue->next);
+        ngx_queue_init(&queue->next);
     }
 
     ngx_log_error(NGX_LOG_INFO, conf->log, 0,
                   "ngx_http_rpc_process_notify_task conf:%p queue:%p ",conf ,queue);
     ngx_shmtx_unlock(&queue->next_lock);
 
+    if(pending == NULL)
+        return;
+
     for( pending->prev->next = NULL ;
          pending != NULL;
          pending = pending->next)
     {
         ngx_rpc_task_t *task = ngx_queue_data(pending, ngx_rpc_task_t, done);
-        task->finish.handler(task->finish.p1);
+        task->finish.handler(task, task->finish.p1);
         ngx_log_error(NGX_LOG_INFO, conf->log, 0,
                       "ngx_http_rpc_process_notify_task conf:%p queue:%p task:%p", conf, queue, pending);
     }
@@ -103,9 +106,11 @@ static void* ngx_http_rpc_create_main_conf(ngx_conf_t *cf)
         return NULL;
     }
 
-    conf->queue = NULL;
+    conf->proc_queue = NULL;
     conf->done_queue = NULL;
     conf->notify  = NULL;
+
+    conf->log = ngx_cycle->log;
 
     ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "ngx_http_rpc_create_srv_conf :%p", conf);
     return conf;
@@ -126,7 +131,7 @@ static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle)
 
     rpc_conf->done_queue = ngx_http_rpc_task_queue_create(rpc_conf->proc_queue->pool);
 
-    rpc_conf->notify =  ngx_rpc_queue_add_current_consumer(rpc_conf->proc_queue);
+    rpc_conf->notify =  ngx_rpc_queue_add_current_consumer(rpc_conf->proc_queue, rpc_conf);
 
     rpc_conf->notify->read_hanlder = ngx_http_rpc_process_notify_task;
     rpc_conf->notify->write_hanlder = ngx_http_rpc_process_notify_task;

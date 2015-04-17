@@ -35,7 +35,6 @@ typedef struct {
 ///
 typedef struct {
     ngx_slab_pool_t *pool;
-
     ngx_queue_t next;
     ngx_shmtx_sh_t next_sh;
     ngx_shmtx_t next_lock;

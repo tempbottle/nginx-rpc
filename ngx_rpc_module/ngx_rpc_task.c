@@ -10,7 +10,7 @@
 ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log)
 {
 
-    ngx_rpc_task_t* task = (ngx_rpc_task_t*)
+    ngx_rpc_task_t *task = (ngx_rpc_task_t*)
             ngx_slab_alloc(pool, sizeof(ngx_rpc_task_t));
 
     if(task == NULL)
@@ -18,6 +18,9 @@ ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log)
 
     memset(task, 0, sizeof(ngx_rpc_task_t));
     task->log = log;
+
+    ngx_queue_init(&task->done);
+
     return task;
 }
 
@@ -56,7 +59,7 @@ ngx_rpc_task_queue_t *ngx_http_rpc_task_queue_create(ngx_slab_pool_t *pool)
 
     q->pool = pool;
 
-    ngx_queue_init(q->next);
+    ngx_queue_init(&q->next);
 
     if(ngx_shmtx_create(&q->next_lock, &q->next_sh, NULL) != NGX_OK)
     {

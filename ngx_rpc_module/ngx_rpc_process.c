@@ -79,24 +79,24 @@ static void ngx_proc_rpc_process_one_cycle(void * conf)
     ngx_proc_rpc_conf_t * rpc_conf= (ngx_proc_rpc_conf_t *)conf;
     ngx_rpc_processor_t * p = rpc_conf->processor;
 
-    ngx_rpc_task_t * task = ngx_atomic_swap_set(p->ptr, NULL);
+    ngx_rpc_task_t *task = (ngx_rpc_task_t *)ngx_atomic_swap_set(&p->ptr, NULL);
 
     if(task != NULL )
     {
-        task->closure.handler(task->closure.p1);
+        task->closure.handler(task, task->closure.p1);
 
-        ngx_shmtx_lock(task->done_queue->next_lock);
-        ngx_queue_add(task->done_queue->next, task->done);
-        ngx_shmtx_unlock(task->done_queue->next_lock);
+        ngx_shmtx_lock(&task->done_queue->next_lock);
+        ngx_queue_add(&task->done_queue->next, &task->done);
+        ngx_shmtx_unlock(&task->done_queue->next_lock);
     }
 
     ngx_log_error(NGX_LOG_INFO, rpc_conf->log, 0 ,
                   "ngx_proc_rpc_process_one_cycle rpc_conf:%p, processor:%p, task:%p",
                   rpc_conf, p, task);
 
-    ngx_shmtx_lock(rpc_conf->queue->procs_lock);
-    ngx_queue_add(rpc_conf->queue->idles, p->next);
-    ngx_shmtx_unlock(rpc_conf->queue->procs_lock);
+    ngx_shmtx_lock(&rpc_conf->queue->procs_lock);
+    ngx_queue_add(&rpc_conf->queue->idles, &p->next);
+    ngx_shmtx_unlock(&rpc_conf->queue->procs_lock);
 }
 
 
@@ -218,9 +218,8 @@ static char *ngx_proc_rpc_merge_loc_conf(ngx_conf_t *cf, void *parent, void *chi
     shm_zone->init = ngx_proc_rpc_init_zone;
     shm_zone->data = rpc_conf;
 
-    ngx_log_error(NGX_LOG_INFO, cf->log, 0 ,
-                  "ngx_proc_rpc_set_shm_size %d queue_capacity:%d",
-                  rpc_conf->shm_size, rpc_conf->queue_capacity);
+    ngx_log_error(NGX_LOG_INFO, cf->log, 0 , "ngx_proc_rpc_set_shm_size %d",
+                  rpc_conf->shm_size);
     return NGX_CONF_OK;
 }
 
@@ -242,9 +241,8 @@ static ngx_int_t  ngx_proc_rpc_master_init(ngx_cycle_t *cycle)
 
 
 
-    ngx_log_error(NGX_LOG_INFO, cycle->log, 0 , "ngx_proc_rpc_init_zone, \
-                  conf:%p, queue:%p,queue_capacity:%d ",
-                  conf, conf->queue, conf->queue_capacity);
+    ngx_log_error(NGX_LOG_INFO, cycle->log, 0 , "ngx_proc_rpc_init_zone, conf:%p, queue:%p",
+                  conf, conf->queue);
     return NGX_OK;
 }
 
@@ -268,13 +266,14 @@ static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
     if(conf == NULL)
         return NGX_OK;
 
-     conf->processor = ngx_slab_alloc(conf->shpool, sizeof(ngx_rpc_processor_t));
+    conf->processor = ngx_slab_alloc(conf->shpool, sizeof(ngx_rpc_processor_t));
 
-    conf->processor->notify = ngx_rpc_queue_add_current_producer(conf->queue);
+    conf->processor->notify =
+            ngx_rpc_queue_add_current_producer(conf->queue, conf->processor);
 
     conf->processor->notify->ctx = conf;
     conf->processor->notify->read_hanlder = ngx_proc_rpc_process_one_cycle;
-    conf->processor->notify->read_hanlder = ngx_proc_rpc_process_one_cycle;
+    conf->processor->notify->write_hanlder = ngx_proc_rpc_process_one_cycle;
 
     ngx_log_error(NGX_LOG_INFO,cycle->log, 0,
                   "ngx_http_rpc_init_process, conf:%p queue:%p processor:%p nofiy:%p",

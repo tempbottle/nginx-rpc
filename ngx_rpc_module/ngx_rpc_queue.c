@@ -18,12 +18,12 @@ ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool)
         return NULL;
     }
 
-    ngx_queue_init(idles);
+    ngx_queue_init(&q->idles);
 
     q->producer = ngx_rpc_notify_create(shpool);
     q->consumer = ngx_rpc_notify_create(shpool);
 
-    gx_log_error(NGX_LOG_DEBUG, ngx_cycle->log, 0,
+    ngx_log_error(NGX_LOG_DEBUG, ngx_cycle->log, 0,
                  "ngx_rpc_queue_create queue:%p producer:%d consumer:%d",
                  q, q->producer->event_fd , q->consumer->event_fd);
 
@@ -31,19 +31,17 @@ ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool)
 }
 
 
-ngx_rpc_notify_t *ngx_rpc_queue_add_current_producer(ngx_rpc_queue_t *queue)
+ngx_rpc_notify_t *ngx_rpc_queue_add_current_producer(ngx_rpc_queue_t *queue, void *ctx)
 {
-     ngx_rpc_notify_init(p->notify, p);
+     ngx_rpc_notify_init(queue->producer, ctx);
      return queue->producer;
 }
 
-ngx_rpc_notify_t *ngx_rpc_queue_add_current_consumer(ngx_rpc_queue_t *queue)
+ngx_rpc_notify_t *ngx_rpc_queue_add_current_consumer(ngx_rpc_queue_t *queue, void *ctx)
 {
-    ngx_rpc_notify_init(p->notify, p);
+    ngx_rpc_notify_init(queue->consumer, ctx);
     return  queue->consumer;
 }
-
-
 
 int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue)
 {
@@ -57,6 +55,35 @@ int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue)
 }
 
 
+int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, void *task)
+{
+    ngx_rpc_processor_t *proc = NULL;
+
+    ngx_shmtx_lock(&queue->procs_lock);
+    if(!ngx_queue_empty(&queue->idles))
+    {
+        proc = ngx_queue_data(queue->idles.next, ngx_rpc_processor_t, next );
+        ngx_queue_remove(queue->idles.next);
+    }
+    ngx_shmtx_unlock(&queue->procs_lock);
+
+    if( proc == NULL)
+        return -1;
+
+    void* pre_ptr = (void* )ngx_atomic_swap_set(&proc->ptr, task);
+
+    ngx_rpc_notify_trigger(proc->notify);
+
+    ngx_log_error(NGX_LOG_DEBUG, queue->log, 0,
+                  "ngx_rpc_queue_push_task queue:%p task:%p proc:%p notify:%p fd:%d pre_ptr:%p ",
+                  queue, task, proc, proc->notify, proc->notify->event_fd, pre_ptr);
+    return 0;
+}
+
+
+
+
+/*
 int ngx_rpc_queue_push(ngx_rpc_queue_t *queue, void* task)
 {
 
@@ -173,3 +200,4 @@ void* ngx_rpc_queue_pop(ngx_rpc_queue_t *queue, ngx_rpc_notify_t *notify)
     }
 }
 
+*/

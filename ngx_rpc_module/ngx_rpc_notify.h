@@ -9,6 +9,7 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 #include <ngx_log.h>
+#include <sys/eventfd.h>
 
 
 #define ngx_atomic_swap_set(x,y) __sync_lock_test_and_set(x, y)
@@ -45,8 +46,7 @@ ngx_rpc_notify_t* ngx_rpc_notify_init(ngx_rpc_notify_t *notify , void*ctx);
 int ngx_rpc_notify_destory(ngx_rpc_notify_t* notify);
 
 
-#define ngx_rpc_notify_trigger(notify) \
-    eventfd_write(notify->event_fd, 1)
+#define ngx_rpc_notify_trigger(notify)  eventfd_write((notify)->event_fd, 1)
 
 
 ///////
