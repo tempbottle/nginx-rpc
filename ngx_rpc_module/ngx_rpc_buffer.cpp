@@ -15,12 +15,20 @@ bool NgxChainBufferReader::Next(const void** data, int* size)
 
     while(cur_buf && !cur_buf->in_file)
     {
+        //cur is over
         if(cur_buf->pos == cur_buf->last)
         {
-            chain = chain->next;
-            cur_buf = chain->buf;
-            continue;
+
+            if(chain->next != NULL)
+            {
+                 cur_buf = chain->next->buf;
+                 continue;
+            }else{
+
+                return false;
+            }
         }
+
         *data = cur_buf->pos;
         *size = cur_buf->last - cur_buf->pos;
         cur_buf->pos = cur_buf->last;
@@ -141,7 +149,7 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
     if(chain->buf != NULL && chain->buf->last == chain->buf->pos)
     {
         chain->next = (ngx_chain_t*)
-                ngx_slab_alloc_locked(pool, sizeof(ngx_chain_t));
+                ngx_slab_alloc(pool, sizeof(ngx_chain_t));
 
         chain = chain->next;
         chain->next = NULL;
@@ -159,9 +167,9 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
         *size = default_size * extends;
         //chain->buf = ngx_create_temp_buf(pool, *size);
 
-        ngx_buf_t* b =(ngx_buf_t*)ngx_slab_alloc_locked(pool, sizeof(ngx_buf_t));
+        ngx_buf_t* b =(ngx_buf_t*)ngx_slab_alloc(pool, sizeof(ngx_buf_t));
 
-        b->start = (u_char*)ngx_slab_alloc_locked(pool, *size);
+        b->start = (u_char*)ngx_slab_alloc(pool, *size);
         b->pos   = b->start;
         b->last  = b->start;
         b->end   = b->last + *size;

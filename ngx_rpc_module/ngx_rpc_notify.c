@@ -52,8 +52,8 @@ ngx_rpc_notify_t *ngx_rpc_notify_create(ngx_slab_pool_t *shpool)
 
     notify->log = ngx_cycle->log;
 
-    //notify->event_fd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
-    notify->event_fd = eventfd(0, EFD_NONBLOCK);
+    notify->event_fd = eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
+    //notify->event_fd = eventfd(0, EFD_NONBLOCK);
 
     return notify;
 }
@@ -61,6 +61,7 @@ ngx_rpc_notify_t *ngx_rpc_notify_create(ngx_slab_pool_t *shpool)
 ngx_rpc_notify_t* ngx_rpc_notify_init(ngx_rpc_notify_t *notify, void *ctx){
 
     notify->ctx = ctx;
+    notify->log = ngx_cycle->log;
 
     notify->notify_conn = ngx_get_connection(notify->event_fd, ngx_cycle->log);
 
@@ -85,7 +86,7 @@ ngx_rpc_notify_t* ngx_rpc_notify_init(ngx_rpc_notify_t *notify, void *ctx){
         return NULL;
     }
 
-    ngx_log_debug(NGX_LOG_DEBUG_ALL, notify->log, 0,
+    ngx_log_error(NGX_LOG_WARN, ngx_cycle->log, 0,
                   "ngx_rpc_notify_init notify:%p eventfd:%d",
                   notify, notify->event_fd);
 
@@ -94,7 +95,7 @@ ngx_rpc_notify_t* ngx_rpc_notify_init(ngx_rpc_notify_t *notify, void *ctx){
 
 int ngx_rpc_notify_destory(ngx_rpc_notify_t* notify)
 {
-    ngx_log_debug(NGX_LOG_DEBUG_ALL, notify->log, 0,
+    ngx_log_debug(NGX_LOG_DEBUG_ALL, ngx_cycle->log, 0,
                   "ngx_rpc_notify_destory notify:%p eventfd:%d",
                   notify, notify->event_fd);
 

@@ -35,6 +35,8 @@ typedef struct {
 ///
 typedef struct {
     ngx_slab_pool_t *pool;
+    ngx_rpc_notify_t *notify;
+
     ngx_queue_t next;
     ngx_shmtx_sh_t next_sh;
     ngx_shmtx_t next_lock;
@@ -111,7 +113,7 @@ struct ngx_rpc_task_s {
 
 ngx_rpc_task_t *ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log);
 
-void ngx_http_rpc_task_destory(ngx_rpc_task_t *t);
+void ngx_http_rpc_task_destory(void *t);
 
 
 

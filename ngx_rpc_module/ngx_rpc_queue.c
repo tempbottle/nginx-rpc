@@ -63,12 +63,24 @@ int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, void *task)
     if(!ngx_queue_empty(&queue->idles))
     {
         proc = ngx_queue_data(queue->idles.next, ngx_rpc_processor_t, next );
-        ngx_queue_remove(queue->idles.next);
+        //ngx_queue_remove(queue->idles.next);
+
+        (queue->idles.next)->next->prev = (queue->idles.next)->prev;
+        (queue->idles.next)->prev->next = (queue->idles.next)->next;
+       // (queue->idles.next)->prev = NULL;
+       // (queue->idles.next)->next = NULL;
+
+        ngx_queue_init(&proc->next);
     }
     ngx_shmtx_unlock(&queue->procs_lock);
 
-    if( proc == NULL)
+    if(proc == NULL)
+    {
+        ngx_log_error(NGX_LOG_ERR, queue->log, 0,
+                       "ngx_rpc_queue_push_task null ,queue:%p task:%p proc:%p ",
+                       queue, task, proc);
         return -1;
+    }
 
     void* pre_ptr = (void* )ngx_atomic_swap_set(&proc->ptr, task);
 

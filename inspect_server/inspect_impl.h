@@ -14,6 +14,8 @@ namespace ngxrpc { namespace inspect {
 class ApplicationServer
 {
 public:
+
+
      void interface(RpcChannel *channel,
                     const ::ngxrpc::inspect::Request* request,
                     ::ngxrpc::inspect::Response* response,
