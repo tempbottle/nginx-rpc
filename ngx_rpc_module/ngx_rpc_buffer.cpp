@@ -4,7 +4,6 @@
 
 NgxChainBufferReader::NgxChainBufferReader(ngx_chain_t& ch):
     chain(&ch),
-    cur_pos(NULL),
     totaly(0)
 {
 }
@@ -79,7 +78,6 @@ bool NgxChainBufferReader::Skip(int count)
 NgxChainBufferWriter::NgxChainBufferWriter(ngx_chain_t& ch, ngx_pool_t* p,unsigned int ex):
     chain(&ch),
     pool(p),
-    cur_pos(NULL),
     totaly(0),
     extends(ex),
     default_size(4096)
@@ -92,7 +90,7 @@ bool NgxChainBufferWriter::Next(void** data, int* size)
 {
 
     // need allocate new chain
-    if(chain->buf != NULL && chain->buf->last == chain->buf->pos)
+    if(chain->buf != NULL && chain->buf->last == chain->buf->end)
     {
         chain->next = (ngx_chain_t*)
                 ngx_palloc(pool, sizeof(ngx_chain_t));
@@ -105,17 +103,28 @@ bool NgxChainBufferWriter::Next(void** data, int* size)
     // if skiped has called
     if(chain->buf)
     {
-        *size = chain->buf->last - cur_pos;
-        *data = cur_pos;
-        cur_pos = chain->buf->last;
+        *size = chain->buf->end - chain->buf->last;
+        *data = chain->buf->last;
+
+        chain->buf->pos = chain->buf->last;
+        chain->buf->last = chain->buf->end;
     }else{
         // allocate new buff
         *size = default_size * extends;
-        chain->buf = ngx_create_temp_buf(pool, *size);
-        cur_pos = chain->buf->last;
+        //chain->buf = ngx_create_temp_buf(pool, *size);
+
+        ngx_buf_t* b =(ngx_buf_t*)ngx_palloc(pool, sizeof(ngx_buf_t));
+
+        b->start = (u_char*)ngx_palloc(pool, *size);
+        b->pos   = b->start;
+        b->last = b->start + *size;
+        b->end   = b->last;
+        b->temporary = 1;
 
         extends += 1;
-        *data = chain->buf->pos;
+        *data = b->pos;
+
+        chain->buf = b;
     }
 
     totaly += *size;
@@ -124,8 +133,11 @@ bool NgxChainBufferWriter::Next(void** data, int* size)
 
 void NgxChainBufferWriter::BackUp(int count)
 {
-    cur_pos -= count;
     totaly -= count;
+    chain->buf->last -= count;
+
+    assert(chain->buf->last >= chain->buf->pos);
+    assert(totaly>0);
 }
 
 ////////////////////////////
@@ -133,7 +145,6 @@ void NgxChainBufferWriter::BackUp(int count)
 NgxShmChainBufferWriter::NgxShmChainBufferWriter(ngx_chain_t& ch, ngx_slab_pool_t* p,unsigned int ex):
     chain(&ch),
     pool(p),
-    cur_pos(NULL),
     totaly(0),
     extends(ex),
     default_size(4096)
@@ -146,7 +157,7 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
 {
 
     // need allocate new chain
-    if(chain->buf != NULL && chain->buf->last == chain->buf->pos)
+    if(chain->buf != NULL && chain->buf->last == chain->buf->end)
     {
         chain->next = (ngx_chain_t*)
                 ngx_slab_alloc(pool, sizeof(ngx_chain_t));
@@ -159,9 +170,12 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
     // if skiped has called
     if(chain->buf)
     {
-        *size = chain->buf->last - cur_pos;
-        *data = cur_pos;
-        cur_pos = chain->buf->last;
+        *size = chain->buf->end - chain->buf->last;
+        *data = chain->buf->last;
+
+        chain->buf->pos = chain->buf->last;
+        chain->buf->last = chain->buf->end;
+
     }else{
         // allocate new buff
         *size = default_size * extends;
@@ -171,15 +185,15 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
 
         b->start = (u_char*)ngx_slab_alloc(pool, *size);
         b->pos   = b->start;
-        b->last  = b->start;
-        b->end   = b->last + *size;
+        b->last = b->start + *size;
+        b->end   = b->last;
         b->temporary = 1;
 
-        cur_pos = b->last;
-        extends += 1;
+
         *data = b->pos;
 
         chain->buf = b;
+        extends += 1;
     }
 
     totaly += *size;
@@ -188,8 +202,11 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
 
 void NgxShmChainBufferWriter::BackUp(int count)
 {
-    cur_pos -= count;
     totaly -= count;
+    chain->buf->last -= count;
+
+    assert(chain->buf->last >= chain->buf->pos);
+    assert(totaly>0);
 }
 
 

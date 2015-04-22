@@ -257,20 +257,32 @@ static void ngx_http_inspect_application_finish(ngx_rpc_task_t* _this, void *ctx
 
     r->headers_out.content_type = type;
     r->headers_out.status = task->response_states;
-    ngx_http_send_header(r);
 
-    if(task->response_states == NGX_HTTP_OK)
+
+
+
+    if(task->res_length > 0)
     {
         r->headers_out.content_length_n = task->res_length;
         r->connection->buffered |= NGX_HTTP_WRITE_BUFFERED;
-        ngx_http_output_filter(r, &task->res_bufs);
+    }
+
+    int rc = ngx_http_send_header(r);
+
+    if(task->res_length > 0)
+    {
+        rc = ngx_http_output_filter(r, &task->res_bufs);
     }
 
     ngx_pool_cleanup_t *p1 = ngx_pool_cleanup_add(r->connection->pool, 0);
     p1->data = task;
     p1->handler = ngx_http_rpc_task_destory;
 
-    ngx_http_finalize_request(r, task->response_states);
+    ngx_log_error(NGX_LOG_INFO, task->log, 0,
+                  "ngx_http_inspect_application_finish task:%p status:%d size:%d, rc:%d",
+                  task, task->response_states, task->res_length,rc );
+
+    ngx_http_finalize_request(r, rc);
 }
 
 
@@ -415,6 +427,7 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
         }
 
         inspect_ctx->rpc_conf = rpc_conf;
+        inspect_ctx->r = r;
 
 
         // the destructor of ngx_http_inspect_ctx_t
@@ -498,10 +511,11 @@ static void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,Rpc
 {
     task->response_states = result;
     NgxShmChainBufferWriter writer(task->res_bufs, task->pool);
+    int ex = res->ByteSize();
     bool ret = res->SerializeToZeroCopyStream(&writer);
     task->res_length = writer.totaly;
 
-    //ngx_log_error(NGX_LOG_ERR, task->log, 0, "SerializeToZeroCopyStream:%d", ret);
+
 
     // clean the channel
     delete channel->req;
@@ -513,8 +527,8 @@ static void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,Rpc
     ngx_shmtx_unlock(&task->done_queue->next_lock);
 
     ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
-                  "SerializeToZeroCopyStream:%d size:%d notify fd:%d",
-                  ret, task->res_length,task->done_queue->notify->event_fd);
+                  "SerializeToZeroCopyStream:%d size:%d,expect:%d notify fd:%d",
+                  ret, task->res_length, ex, task->done_queue->notify->event_fd);
 
     ngx_rpc_notify_trigger(task->done_queue->notify);
 }

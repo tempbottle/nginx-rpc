@@ -257,7 +257,7 @@ static void  ngx_proc_rpc_master_exit (ngx_cycle_t *cycle){
 static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
 {
 
-    sleep(60);
+   // sleep(60);
     ngx_proc_rpc_conf_t * conf= ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
 
     if(conf == NULL)

@@ -21,9 +21,9 @@ public:
                     ::ngxrpc::inspect::Response* response,
                     RpcCallHandler done)
      {
-
+         response->set_json("hehe");
          // TODO your process
-         done(channel, request, response, NGX_OK);
+         done(channel, request, response, NGX_HTTP_OK);
      }
 
      void requeststatus(RpcChannel *channel,

@@ -73,7 +73,10 @@ static void ngx_http_rpc_process_notify_task(void *ctx)
     if(!ngx_queue_empty(&queue->next))
     {
         pending = queue->next.next;
-        ngx_queue_remove(&queue->next);
+
+        pending->prev = queue->next.prev;
+        pending->prev->next = pending;
+
         ngx_queue_init(&queue->next);
     }
 
@@ -119,6 +122,7 @@ static void* ngx_http_rpc_create_main_conf(ngx_conf_t *cf)
 
 static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle)
 {
+
     ngx_http_rpc_conf_t *rpc_conf =
             ngx_http_cycle_get_module_main_conf(cycle, ngx_http_rpc_module);
 

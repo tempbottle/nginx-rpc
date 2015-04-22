@@ -25,7 +25,6 @@ public:
 
 public:
     ngx_chain_t *chain;
-    u_char* cur_pos;
     unsigned int totaly;
 };
 
@@ -46,7 +45,6 @@ public:
     ngx_chain_t *chain;
     ngx_pool_t* pool;
 
-    u_char* cur_pos;
     unsigned int totaly;
 
     unsigned int extends;
@@ -70,8 +68,6 @@ public:
 public:
     ngx_chain_t *chain;
     ngx_slab_pool_t* pool;
-
-    u_char* cur_pos;
     unsigned int totaly;
 
     unsigned int extends;
