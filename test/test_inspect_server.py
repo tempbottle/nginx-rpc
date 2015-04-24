@@ -26,6 +26,8 @@ if __name__ == '__main__':
 
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor()) 
     response = opener.open(req, data) 
-    print response.read()
+    res = Response()
+    res.ParseFromString(response.read())
+    print res.json
     
     

@@ -6,92 +6,85 @@ ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool)
 
     if(q == NULL)
     {
+        ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                      "ngx_slab_alloc:%p alloc:%d failed ",
+                      shpool, sizeof(ngx_rpc_queue_t));
          return NULL;
     }
 
     q->pool = shpool;
     q->log = ngx_cycle->log;
 
-    if(ngx_shmtx_create(&q->procs_lock, &q->procs_sh, NULL) != NGX_OK)
+    if(ngx_shmtx_create(&q->idles_lock, &q->idles_sh, NULL) != NGX_OK)
     {
         ngx_slab_free(shpool, q);
+        ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                      "ngx_slab_alloc:%p ngx_shmtx_create failed ",
+                      shpool);
         return NULL;
     }
 
     ngx_queue_init(&q->idles);
 
-    q->producer = ngx_rpc_notify_create(shpool);
-    q->consumer = ngx_rpc_notify_create(shpool);
+    q->notify_slot = ngx_slab_alloc(shpool, sizeof(ngx_rpc_notify_t *) * ngx_ncpu);
+
+    int c = 0;
+    for( ; c < ngx_ncpu; ++c)
+    {
+        q->notify_slot[c] = ngx_rpc_notify_create(shpool);
+    }
 
     ngx_log_error(NGX_LOG_DEBUG, ngx_cycle->log, 0,
-                 "ngx_rpc_queue_create queue:%p producer:%d consumer:%d",
-                 q, q->producer->event_fd , q->consumer->event_fd);
+                 "ngx_rpc_queue_create queue:%p ngx_ncpu:%d", q, ngx_ncpu);
 
     return q;
 }
 
 
-ngx_rpc_notify_t *ngx_rpc_queue_add_current_producer(ngx_rpc_queue_t *queue, void *ctx)
-{
-     ngx_rpc_notify_init(queue->producer, ctx);
-     return queue->producer;
-}
-
-ngx_rpc_notify_t *ngx_rpc_queue_add_current_consumer(ngx_rpc_queue_t *queue, void *ctx)
-{
-    ngx_rpc_notify_init(queue->consumer, ctx);
-    return  queue->consumer;
-}
 
 int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue)
 {
-    ngx_log_error(NGX_LOG_INFO,queue->log, 0, "ngx_rpc_queue_destory queue:%p ngx_ncpu", queue);
+    ngx_log_error(NGX_LOG_INFO, queue->log, 0, "ngx_rpc_queue_destory queue:%p ngx_ncpu", queue);
 
-    ngx_rpc_notify_destory(queue->producer);
-    ngx_rpc_notify_destory(queue->consumer);
+    int c = 0;
+    for( ; c < ngx_ncpu; ++c)
+    {
+       ngx_rpc_notify_free(queue->notify_slot[c]);
+    }
+
+    ngx_slab_free(queue->pool, queue->notify_slot);
 
     ngx_slab_free(queue->pool, queue);
     return 0;
 }
 
 
-int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, void *task)
+int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, void* task)
 {
-    ngx_rpc_processor_t *proc = NULL;
 
-    ngx_shmtx_lock(&queue->procs_lock);
+    ngx_queue_t* proc_notify = NULL;
+
+    ngx_shmtx_lock(&queue->idles_lock);
+
     if(!ngx_queue_empty(&queue->idles))
     {
-        proc = ngx_queue_data(queue->idles.next, ngx_rpc_processor_t, next );
-        //ngx_queue_remove(queue->idles.next);
+        proc_notify = queue->idles.next;
 
-        (queue->idles.next)->next->prev = (queue->idles.next)->prev;
-        (queue->idles.next)->prev->next = (queue->idles.next)->next;
-       // (queue->idles.next)->prev = NULL;
-       // (queue->idles.next)->next = NULL;
-
-        ngx_queue_init(&proc->next);
-    }
-    ngx_shmtx_unlock(&queue->procs_lock);
-
-    if(proc == NULL)
-    {
-        ngx_log_error(NGX_LOG_ERR, queue->log, 0,
-                       "ngx_rpc_queue_push_task null ,queue:%p task:%p proc:%p ",
-                       queue, task, proc);
-        return -1;
+        queue->idles.next = proc_notify->next;
+        proc_notify->next->prev = &queue->idles;
     }
 
-    void* pre_ptr = (void* )ngx_atomic_swap_set(&proc->ptr, task);
+    ngx_shmtx_unlock(&queue->idles_lock);
 
-    ngx_rpc_notify_trigger(proc->notify);
+    if( proc_notify == NULL)
+        return NGX_ERROR;
 
-    ngx_log_error(NGX_LOG_DEBUG, queue->log, 0,
-                  "ngx_rpc_queue_push_task queue:%p task:%p proc:%p notify:%p fd:%d pre_ptr:%p ",
-                  queue, task, proc, proc->notify, proc->notify->event_fd, pre_ptr);
-    return 0;
+
+    ngx_rpc_notify_t* n = ngx_queue_data(proc_notify, ngx_rpc_notify_t, idles);
+
+    return ngx_rpc_notify_push_task(n ,task);
+
 }
-
 
 
 

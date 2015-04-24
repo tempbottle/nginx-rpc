@@ -114,12 +114,14 @@ bool NgxChainBufferWriter::Next(void** data, int* size)
         //chain->buf = ngx_create_temp_buf(pool, *size);
 
         ngx_buf_t* b =(ngx_buf_t*)ngx_palloc(pool, sizeof(ngx_buf_t));
+        memset(b, 0, sizeof(ngx_buf_t));
 
         b->start = (u_char*)ngx_palloc(pool, *size);
         b->pos   = b->start;
-        b->last = b->start + *size;
+        b->last  = b->start + *size;
         b->end   = b->last;
-        b->temporary = 1;
+        b->temporary = 0;
+        b->memory    = 1;
 
         extends += 1;
         *data = b->pos;
@@ -187,8 +189,9 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
         b->pos   = b->start;
         b->last = b->start + *size;
         b->end   = b->last;
-        b->temporary = 1;
 
+        b->temporary = 0;
+        b->memory    = 1;
 
         *data = b->pos;
 

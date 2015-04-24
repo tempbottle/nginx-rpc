@@ -32,16 +32,6 @@ typedef struct {
 } task_metric_t ;
 
 
-///
-typedef struct {
-    ngx_slab_pool_t *pool;
-    ngx_rpc_notify_t *notify;
-
-    ngx_queue_t next;
-    ngx_shmtx_sh_t next_sh;
-    ngx_shmtx_t next_lock;
-} ngx_rpc_task_queue_t;
-
 
 ///
 struct ngx_rpc_task_s {
@@ -50,8 +40,9 @@ struct ngx_rpc_task_s {
     ngx_slab_pool_t *pool;
     ngx_log_t * log;
 
-    ngx_queue_t done;
-    ngx_rpc_task_queue_t *done_queue;
+    ngx_rpc_notify_t *done_notify;
+    ngx_queue_t node;
+
 
     // for sub request
     char interface[MAX_PATH_NAME];
@@ -115,10 +106,6 @@ ngx_rpc_task_t *ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log);
 
 void ngx_http_rpc_task_destory(void *t);
 
-
-
-ngx_rpc_task_queue_t *ngx_http_rpc_task_queue_create(ngx_slab_pool_t *pool);
-void ngx_http_rpc_task_queue_destory(ngx_rpc_task_queue_t *q);
 
 
 #endif

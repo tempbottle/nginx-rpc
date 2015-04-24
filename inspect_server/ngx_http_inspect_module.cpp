@@ -259,18 +259,24 @@ static void ngx_http_inspect_application_finish(ngx_rpc_task_t* _this, void *ctx
     r->headers_out.status = task->response_states;
 
 
-
-
     if(task->res_length > 0)
     {
         r->headers_out.content_length_n = task->res_length;
-        r->connection->buffered |= NGX_HTTP_WRITE_BUFFERED;
+        //r->connection->buffered |= NGX_HTTP_WRITE_BUFFERED;
     }
 
     int rc = ngx_http_send_header(r);
 
     if(task->res_length > 0)
     {
+        //find last
+        ngx_chain_t *ptr = &task->res_bufs;
+
+        for( ; ptr->next != NULL; ptr = ptr->next);
+        // last
+        ptr->buf->last_buf = 1;
+
+
         rc = ngx_http_output_filter(r, &task->res_bufs);
     }
 
@@ -296,7 +302,6 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
         ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
         return;
     }
-
 
 
     ngx_http_inspect_ctx_t *inspect_ctx = (ngx_http_inspect_ctx_t *)

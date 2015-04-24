@@ -61,44 +61,6 @@ ngx_module_t  ngx_http_rpc_module = {
 
 
 
-static void ngx_http_rpc_process_notify_task(void *ctx)
-{
-    ngx_http_rpc_conf_t *conf = (ngx_http_rpc_conf_t *) ctx;
-    ngx_rpc_task_queue_t* queue = conf->done_queue;
-
-    ngx_queue_t* pending = NULL;
-
-    ngx_shmtx_lock(&queue->next_lock);
-
-    if(!ngx_queue_empty(&queue->next))
-    {
-        pending = queue->next.next;
-
-        pending->prev = queue->next.prev;
-        pending->prev->next = pending;
-
-        ngx_queue_init(&queue->next);
-    }
-
-    ngx_log_error(NGX_LOG_INFO, conf->log, 0,
-                  "ngx_http_rpc_process_notify_task conf:%p queue:%p pending:%p ",conf , queue, pending);
-    ngx_shmtx_unlock(&queue->next_lock);
-
-    if(pending == NULL)
-        return;
-
-    for( pending->prev->next = NULL ;
-         pending != NULL;
-         pending = pending->next)
-    {
-        ngx_rpc_task_t *task = ngx_queue_data(pending, ngx_rpc_task_t, done);
-        task->finish.handler(task, task->finish.p1);
-        ngx_log_error(NGX_LOG_INFO, conf->log, 0,
-                      "ngx_http_rpc_process_notify_task conf:%p queue:%p task:%p", conf, queue, pending);
-    }
-
-}
-
 static void* ngx_http_rpc_create_main_conf(ngx_conf_t *cf)
 {
     ngx_http_rpc_conf_t *conf = (ngx_http_rpc_conf_t *)
@@ -110,8 +72,7 @@ static void* ngx_http_rpc_create_main_conf(ngx_conf_t *cf)
     }
 
     conf->proc_queue = NULL;
-    conf->done_queue = NULL;
-
+    conf->notify     = NULL;
 
     conf->log = ngx_cycle->log;
 
@@ -119,6 +80,9 @@ static void* ngx_http_rpc_create_main_conf(ngx_conf_t *cf)
     return conf;
 }
 
+
+
+static void ngx_http_rpc_process_notify_task(void *ctx);
 
 static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle)
 {
@@ -135,17 +99,13 @@ static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle)
     rpc_conf->log = ngx_cycle->log;
     rpc_conf->proc_queue = proc_conf->queue;
 
-    rpc_conf->done_queue = ngx_http_rpc_task_queue_create(rpc_conf->proc_queue->pool);
-
-    rpc_conf->done_queue->notify =  ngx_rpc_queue_add_current_producer(rpc_conf->proc_queue, rpc_conf);
-
-    rpc_conf->done_queue->notify->read_hanlder = ngx_http_rpc_process_notify_task;
-    rpc_conf->done_queue->notify->write_hanlder = ngx_http_rpc_process_notify_task;
-    rpc_conf->done_queue->notify->ctx = rpc_conf;
+    rpc_conf->notify = ngx_rpc_notify_register(rpc_conf->proc_queue->notify_slot, rpc_conf);
+    rpc_conf->notify->read_hanlder = ngx_http_rpc_process_notify_task;
+    rpc_conf->notify->write_hanlder = ngx_http_rpc_process_notify_task;
 
     ngx_log_error(NGX_LOG_WARN,cycle->log, 0,
-                  "ngx_http_rpc_init_process rpc_conf:%p queue:%p notify:%p done_queue:%p",
-                  rpc_conf, rpc_conf->proc_queue, rpc_conf->done_queue->notify, rpc_conf->done_queue);
+                  "ngx_http_rpc_init_process rpc_conf:%p queue:%p notify :%p eventfd:%p",
+                  rpc_conf, rpc_conf->proc_queue, rpc_conf->notify, rpc_conf->notify->event_fd);
     return NGX_OK;
 }
 
@@ -155,15 +115,33 @@ static void ngx_http_rpc_exit_process(ngx_cycle_t *cycle)
     ngx_http_rpc_conf_t *conf =
             ngx_http_cycle_get_module_main_conf(cycle, ngx_http_rpc_module);
 
-    ngx_http_rpc_task_queue_destory(conf->done_queue);
+    ngx_rpc_notify_unregister(conf->notify);
 
-    ngx_log_error(NGX_LOG_WARN,cycle->log, 0, "ngx_http_rpc_exit_process conf:%p",conf);
+    ngx_log_error(NGX_LOG_WARN, cycle->log, 0, "ngx_http_rpc_exit_process conf:%p", conf);
 }
 
 
 
 
 
+
+static void ngx_http_rpc_process_notify_task(void *ctx)
+{
+    ngx_http_rpc_conf_t *conf = (ngx_http_rpc_conf_t *) ctx;
+
+    ngx_queue_t* pending = NULL;
+
+    while(ngx_rpc_notify_pop_task(conf->notify, &pending) == NGX_OK)
+    {
+        ngx_rpc_task_t * task = ngx_queue_data(pending, ngx_rpc_task_t, node);
+
+        task->finish.handler(task, task->finish.p1);
+
+        ngx_log_debug(NGX_LOG_DEBUG_HTTP, conf->log, 0 ,
+                      "ngx_http_rpc_process_notify_task rpc_conf:%p, notify_eventfd:%d task:%p done_eventfd:%d ",
+                      conf, conf->notify->event_fd, task, task->done_notify->event_fd);
+    }
+}
 
 
 

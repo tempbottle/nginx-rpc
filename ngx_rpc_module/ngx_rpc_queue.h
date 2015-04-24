@@ -17,13 +17,6 @@
 #define ngx_atomic_swap_set(x,y) __sync_lock_test_and_set(x, y)
 
 
-// for every
-typedef struct {
-    ngx_queue_t next;
-    ngx_atomic_t ptr;
-    ngx_rpc_notify_t *notify;
-} ngx_rpc_processor_t;
-
 
 /** muli-proudcer, muilt-custormer queue
  *
@@ -33,13 +26,13 @@ typedef struct {
     ngx_log_t *log;
 
     // all idles proce ngx_rpc_processor_t
-    ngx_queue_t idles;
-    ngx_shmtx_sh_t procs_sh;
-    ngx_shmtx_t procs_lock;
+    ngx_queue_t      idles;
+    ngx_shmtx_sh_t   idles_sh;
+    ngx_shmtx_t      idles_lock;
 
     // it is diffcult to notify single pros or cons
-    ngx_rpc_notify_t *producer;
-    ngx_rpc_notify_t *consumer;
+    ngx_rpc_notify_t ** notify_slot;
+    // the length is ngx_last_process
 
 } ngx_rpc_queue_t;
 
@@ -51,6 +44,13 @@ typedef struct {
 /// \return
 ///
 ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool);
+///
+/// \brief ngx_rpc_queue_destory
+/// \param queue
+/// \return
+///
+int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue);
+
 
 
 ////
@@ -62,21 +62,10 @@ ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool);
 ngx_rpc_notify_t *ngx_rpc_queue_add_current_producer(ngx_rpc_queue_t *queue, void *ctx);
 ngx_rpc_notify_t *ngx_rpc_queue_add_current_consumer(ngx_rpc_queue_t *queue, void *ctx);
 
-///
-/// \brief ngx_rpc_queue_destory
-/// \param queue
-/// \return
-///
-int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue);
 
-///
-/// \brief ngx_rpc_queue_push
-/// \param queue
-/// \param task
-/// \return
-///
+
+
 int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, void* task);
-
 
 
 

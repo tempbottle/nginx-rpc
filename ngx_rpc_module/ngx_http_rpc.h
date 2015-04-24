@@ -24,9 +24,10 @@
  // for rpc_conf and module
 typedef struct
 {
-    ngx_rpc_queue_t *proc_queue;
-    ngx_rpc_task_queue_t *done_queue;
+    ngx_rpc_queue_t  *proc_queue;
+    ngx_rpc_notify_t *notify;
     ngx_log_t* log;
+
 } ngx_http_rpc_conf_t;
 
 extern ngx_module_t ngx_http_rpc_module;

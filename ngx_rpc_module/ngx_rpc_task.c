@@ -20,7 +20,7 @@ ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log)
     task->log = log;
     task->pool = pool;
 
-    ngx_queue_init(&task->done);
+    ngx_queue_init(&task->node);
 
     return task;
 }
@@ -54,26 +54,3 @@ void ngx_http_rpc_task_destory(void *t){
     ngx_slab_free(pool, task);
 }
 
-
-ngx_rpc_task_queue_t *ngx_http_rpc_task_queue_create(ngx_slab_pool_t *pool)
-{
-    ngx_rpc_task_queue_t *q = ngx_slab_alloc(pool, sizeof(ngx_rpc_task_queue_t));
-
-    q->pool = pool;
-
-    ngx_queue_init(&q->next);
-
-    if(ngx_shmtx_create(&q->next_lock, &q->next_sh, NULL) != NGX_OK)
-    {
-        ngx_slab_free(pool, q);
-        return NULL;
-    }
-
-    return q;
-}
-
-
-void ngx_http_rpc_task_queue_destory(ngx_rpc_task_queue_t *q)
-{
-    ngx_slab_free(q->pool, q);
-}
