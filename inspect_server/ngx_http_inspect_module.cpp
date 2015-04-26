@@ -259,7 +259,7 @@ static void ngx_http_inspect_application_finish(ngx_rpc_task_t* _this, void *ctx
     r->headers_out.status = task->response_states;
 
 
-    if(task->res_length > 0)
+    if(task->res_length >= 0)
     {
         r->headers_out.content_length_n = task->res_length;
         //r->connection->buffered |= NGX_HTTP_WRITE_BUFFERED;
@@ -310,7 +310,7 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
     ngx_slab_pool_t*pool = inspect_ctx->rpc_conf->proc_queue->pool;
     ngx_rpc_task_t* task = ngx_http_rpc_task_create(pool, inspect_ctx->log);
 
-    task->done_queue = inspect_ctx->rpc_conf->done_queue;
+    task->done_notify = inspect_ctx->rpc_conf->notify;
 
     // 2 copy the request bufs
 
@@ -359,6 +359,8 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
     if(ret != NGX_OK)
     {
         task->response_states = NGX_HTTP_INTERNAL_SERVER_ERROR;
+        task->res_length = 0;
+
         ngx_http_inspect_application_finish(task, inspect_ctx);
     }
 }
@@ -521,21 +523,14 @@ static void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,Rpc
     task->res_length = writer.totaly;
 
 
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                  "SerializeToZeroCopyStream:%d size:%d,expect:%d notify fd:%d",
+                  ret, task->res_length, ex, task->done_notify->event_fd);
 
     // clean the channel
     delete channel->req;
     delete channel->res;
     delete channel;
-
-    ngx_shmtx_lock(&task->done_queue->next_lock);
-    ngx_queue_insert_head(&task->done_queue->next, &task->done);
-    ngx_shmtx_unlock(&task->done_queue->next_lock);
-
-    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
-                  "SerializeToZeroCopyStream:%d size:%d,expect:%d notify fd:%d",
-                  ret, task->res_length, ex, task->done_queue->notify->event_fd);
-
-    ngx_rpc_notify_trigger(task->done_queue->notify);
 }
 
 

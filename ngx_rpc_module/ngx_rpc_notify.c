@@ -83,7 +83,7 @@ static void ngx_rpc_notify_write_handler(ngx_event_t *ev)
 ngx_rpc_notify_t* ngx_rpc_notify_register(ngx_rpc_notify_t **notify_slot, void *ctx)
 {
 
-    if( ngx_process_slot < 0 || ngx_process_slot >= ngx_last_process)
+    if( ngx_process_slot < 0 || ngx_process_slot > ngx_last_process)
     {
         ngx_log_error(NGX_LOG_WARN, ngx_cycle->log, 0,
                       "ngx_rpc_notify_register ngx_process_slot:%d not in range [0, %d)",
@@ -165,7 +165,9 @@ int ngx_rpc_notify_push_task(ngx_rpc_notify_t* notify, ngx_queue_t* node)
 
 
     eventfd_write((notify)->event_fd, 1);
-    return 0;
+
+    ngx_log_error(NGX_LOG_INFO, notify->log, 0, "ngx_rpc_notify_push_task notify:%p eventfd:%d node:%p ", notify, notify->event_fd, node);
+    return NGX_OK;
 }
 
 int ngx_rpc_notify_pop_task(ngx_rpc_notify_t* notify, ngx_queue_t**node)
@@ -184,6 +186,8 @@ int ngx_rpc_notify_pop_task(ngx_rpc_notify_t* notify, ngx_queue_t**node)
     }
 
     ngx_shmtx_unlock(&notify->queue_lock);
+
+    ngx_log_error(NGX_LOG_INFO, notify->log, 0, "ngx_rpc_notify_pop_task notify:%p eventfd:%d node:%p ", notify, notify->event_fd, *node);
 
     return *node == NULL ? NGX_ERROR :NGX_OK;
 }

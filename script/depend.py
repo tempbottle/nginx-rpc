@@ -78,4 +78,4 @@ tengine = {
 }
 
 
-depends = [ boost, protobuf, tengine]
+depends = [protobuf, tengine]

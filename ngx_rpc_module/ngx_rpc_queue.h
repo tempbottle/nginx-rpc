@@ -9,7 +9,7 @@
 #include <ngx_http.h>
 #include <ngx_log.h>
 
-#include <ngx_rpc_notify.h>
+#include <ngx_rpc_task.h>
 
 
 #define NGX_TASK_FLAG 0x1
@@ -43,7 +43,7 @@ typedef struct {
 /// \param max_elem
 /// \return
 ///
-ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool);
+ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool, ngx_log_t *log, int notify_num);
 ///
 /// \brief ngx_rpc_queue_destory
 /// \param queue
@@ -65,7 +65,8 @@ ngx_rpc_notify_t *ngx_rpc_queue_add_current_consumer(ngx_rpc_queue_t *queue, voi
 
 
 
-int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, void* task);
+
+int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, ngx_rpc_task_t *task);
 
 
 

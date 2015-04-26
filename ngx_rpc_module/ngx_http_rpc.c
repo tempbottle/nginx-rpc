@@ -99,7 +99,8 @@ static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle)
     rpc_conf->log = ngx_cycle->log;
     rpc_conf->proc_queue = proc_conf->queue;
 
-    rpc_conf->notify = ngx_rpc_notify_register(rpc_conf->proc_queue->notify_slot, rpc_conf);
+    rpc_conf->notify = ngx_rpc_queue_add_current_producer(rpc_conf->proc_queue, rpc_conf);
+
     rpc_conf->notify->read_hanlder = ngx_http_rpc_process_notify_task;
     rpc_conf->notify->write_hanlder = ngx_http_rpc_process_notify_task;
 

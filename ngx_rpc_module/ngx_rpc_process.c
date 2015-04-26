@@ -133,8 +133,7 @@ static char * ngx_proc_rpc_set_shm_size(ngx_conf_t *cf, ngx_command_t *cmd, void
     shm_zone->init = ngx_proc_rpc_init_zone;
     shm_zone->data = c;
 
-    ngx_log_error(NGX_LOG_WARN, cf->log, 0 , "ngx_proc_rpc_set_shm_size %d , \
-                  conf:%p, queue:%p",
+    ngx_log_error(NGX_LOG_WARN, cf->log, 0 , "ngx_proc_rpc_set_shm_size %d, conf:%p, queue:%p",
                   size, c, c->queue);
 
     return NGX_CONF_OK;
@@ -199,6 +198,11 @@ static char *ngx_proc_rpc_merge_loc_conf(ngx_conf_t *cf, void *parent, void *chi
 }
 
 
+#define ngx_proc_get_main_conf(conf_ctx, module)           \
+    ((ngx_get_conf(conf_ctx, ngx_procs_module)) ?          \
+        ((ngx_proc_conf_ctx_t *) (ngx_get_conf(conf_ctx,   \
+              ngx_procs_module)))->main_conf[module.ctx_index] : NULL)
+
 
 static ngx_int_t  ngx_proc_rpc_master_init(ngx_cycle_t *cycle)
 {
@@ -210,10 +214,23 @@ static ngx_int_t  ngx_proc_rpc_master_init(ngx_cycle_t *cycle)
         return NGX_OK;
     }
 
-    conf->queue = ngx_rpc_queue_create(conf->shpool);
+    ngx_core_conf_t       * core_conf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
-    ngx_log_error(NGX_LOG_WARN, cycle->log, 0 , "ngx_proc_rpc_init_zone, conf:%p, queue:%p",
-                  conf, conf->queue);
+    int notify_num = core_conf->worker_processes <= 0 ? ngx_ncpu : core_conf->worker_processes;
+
+    ngx_proc_main_conf_t  *cmcf = ngx_proc_get_main_conf(cycle->conf_ctx, ngx_proc_core_module);
+    ngx_proc_conf_t      **cpcfp = cmcf->processes.elts;
+    ngx_uint_t p = 0;
+    for( ;p <  cmcf->processes.nelts; ++ p)
+    {
+        notify_num += cpcfp[p]->count;
+
+    }
+
+    conf->queue = ngx_rpc_queue_create(conf->shpool,  cycle->log, notify_num);
+
+    ngx_log_error(NGX_LOG_WARN, cycle->log, 0 , "ngx_proc_rpc_init_zone, conf:%p, queue:%p notify_num:%d,worker_processes:%d",
+                  conf, conf->queue, notify_num, core_conf->worker_processes);
     return NGX_OK;
 }
 
@@ -234,17 +251,20 @@ static void ngx_proc_rpc_process_one_cycle(void * conf);
 static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
 {
 
-   // sleep(60);
+    //sleep(60);
 
     ngx_proc_rpc_conf_t * conf = ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
 
     if(conf == NULL)
+    {
+        ngx_log_error(NGX_LOG_INFO,conf->log , 0, "ngx_rpc_notify_register failed conf:%p", conf);
         return NGX_OK;
+    }
 
     conf->log = ngx_cycle->log;
 
     // init
-    conf->notify = ngx_rpc_notify_register(conf->queue->notify_slot, conf);
+    conf->notify = ngx_rpc_queue_add_current_consumer(conf->queue, conf);
 
     if(conf->notify == NULL)
     {
@@ -252,6 +272,8 @@ static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
                       conf, conf->queue);
         return NGX_ERROR;
     }
+
+
 
     conf->notify->ctx = conf;
     conf->notify->read_hanlder  = ngx_proc_rpc_process_one_cycle;
@@ -287,10 +309,22 @@ static void ngx_proc_rpc_process_one_cycle(void * conf)
            ngx_rpc_task_t *task = ngx_queue_data(node, ngx_rpc_task_t, node);
            task->closure.handler(task, task->closure.p1);
 
-           ngx_rpc_notify_push_task(task->done_notify, node);
+           if(task->done_notify != NULL)
+                ngx_rpc_notify_push_task(task->done_notify, node);
 
            ngx_log_debug(NGX_LOG_DEBUG_HTTP, rpc_conf->log, 0 ,
                          "ngx_proc_rpc_process_one_cycle rpc_conf:%p, notify:%d task:%p done:%d ",
                          rpc_conf, rpc_conf->notify->event_fd, task, task->done_notify->event_fd);
     }
+
+
+    ngx_shmtx_lock(&rpc_conf->queue->idles_lock);
+    rpc_conf->notify->idles.next = rpc_conf->queue->idles.next;
+    rpc_conf-> notify->idles.next->prev = &rpc_conf->notify->idles;
+
+    rpc_conf->notify->idles.prev = &rpc_conf->queue->idles;
+    rpc_conf->queue->idles.next = &rpc_conf->notify->idles;
+    ngx_shmtx_unlock(&rpc_conf->queue->idles_lock);
+
+    ngx_log_error(NGX_LOG_INFO, rpc_conf->log, 0, " ngx_proc_rpc_process_one_cycle add proc:%p slot:%d to queue:% with notify:%p eventfd:%d",rpc_conf, ngx_process_slot, rpc_conf->queue, rpc_conf->notify, rpc_conf->notify->event_fd);
 }
