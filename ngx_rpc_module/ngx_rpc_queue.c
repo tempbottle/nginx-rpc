@@ -15,6 +15,7 @@ ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool, ngx_log_t* log, i
 
     q->pool = shpool;
     q->log = log;
+    q->notify_num = notify_num;
 
     if(ngx_shmtx_create(&q->idles_lock, &q->idles_sh, NULL) != NGX_OK)
     {
@@ -49,7 +50,7 @@ int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue)
     ngx_log_error(NGX_LOG_INFO, queue->log, 0, "ngx_rpc_queue_destory queue:%p ngx_ncpu", queue);
 
     int c = 0;
-    for( ; c < ngx_ncpu; ++c)
+    for( ; c < queue->notify_num; ++c)
     {
        ngx_rpc_notify_free(queue->notify_slot[c]);
     }
@@ -80,7 +81,7 @@ int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, ngx_rpc_task_t* task)
 
     if( proc_notify == NULL)
     {
-          ngx_log_error(NGX_LOG_INFO, queue->log, 0, "ngx_rpc_queue_push_and_notify noc  proc_notify in idles, queue:%p",queue );
+          ngx_log_error(NGX_LOG_INFO, queue->log, 0, "ngx_rpc_queue_push_and_notify no proc_notify in idles, queue:%p",queue );
 
         return NGX_ERROR;
 
@@ -97,30 +98,20 @@ int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, ngx_rpc_task_t* task)
 ngx_rpc_notify_t *ngx_rpc_queue_add_current_consumer(ngx_rpc_queue_t *queue, void *ctx)
 {
     ngx_rpc_notify_t * notify = ngx_rpc_notify_register(queue->notify_slot, ctx);
-
-   /* if(notify != NULL)
-    {
-        ngx_shmtx_lock(&queue->idles_lock);
-
-        notify->idles.next = queue->idles.next;
-        notify->idles.next->prev = &notify->idles;
-
-
-        notify->idles.prev = &queue->idles;
-        queue->idles.next = &notify->idles;
-
-        ngx_shmtx_unlock(&queue->idles_lock);
-    }*/
-
     return notify;
 
 }
 
-ngx_rpc_notify_t *ngx_rpc_queue_add_current_producer(ngx_rpc_queue_t *queue, void *ctx){
-
-
-    return ngx_rpc_notify_register(queue->notify_slot, ctx);
+ngx_rpc_notify_t *ngx_rpc_queue_add_current_producer(ngx_rpc_queue_t *queue, void *ctx)
+{
+    ngx_rpc_notify_t * notify = ngx_rpc_notify_register(queue->notify_slot, ctx);
+    return notify;
 }
+
+
+
+
+
 
 
 

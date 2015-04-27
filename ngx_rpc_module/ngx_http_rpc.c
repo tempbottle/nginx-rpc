@@ -147,5 +147,66 @@ static void ngx_http_rpc_process_notify_task(void *ctx)
 
 
 
+void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx)
+{
+    ngx_rpc_task_t* task = _this;
+    ngx_http_request_t *r = ctx;
+
+    static ngx_str_t type = ngx_string(" application/x-protobuf");
+
+    r->headers_out.content_type = type;
+    r->headers_out.status = task->response_states;
 
 
+    if(task->res_length >= 0)
+    {
+        r->headers_out.content_length_n = task->res_length;
+        r->connection->buffered |= NGX_HTTP_WRITE_BUFFERED;
+    }
+
+    int rc = ngx_http_send_header(r);
+
+    if(task->res_length > 0)
+    {
+        //find last
+        ngx_chain_t *ptr = &task->res_bufs;
+
+        for( ; ptr->next != NULL; ptr = ptr->next);
+        // set last
+        ptr->buf->last_buf = 1;
+
+        rc = ngx_http_output_filter(r, &task->res_bufs);
+    }
+
+    // clear the task
+    ngx_pool_cleanup_t *p1 = ngx_pool_cleanup_add(r->connection->pool, 0);
+    p1->data = task;
+    p1->handler = ngx_http_rpc_task_destory;
+
+    ngx_log_error(NGX_LOG_INFO, task->log, 0,
+                  "ngx_http_inspect_application_finish task:%p status:%d size:%d, rc:%d",
+                  task, task->response_states, task->res_length,rc );
+
+    ngx_http_finalize_request(r, rc);
+}
+
+
+
+void ngx_http_rpc_request_foward(ngx_rpc_task_t* _this, void *ctx)
+{
+
+    ngx_rpc_task_t* task = _this;
+    ngx_http_request_t *r = ctx;
+
+    // reuse the task
+
+
+
+
+
+}
+
+
+void ngx_http_rpc_request_foward_done(ngx_rpc_task_t* _this, void *ctx){
+
+}

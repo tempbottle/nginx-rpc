@@ -309,13 +309,13 @@ static void ngx_proc_rpc_process_one_cycle(void * conf)
            ngx_rpc_task_t *task = ngx_queue_data(node, ngx_rpc_task_t, node);
            task->closure.handler(task, task->closure.p1);
 
-           if(task->done_notify != NULL)
-                ngx_rpc_notify_push_task(task->done_notify, node);
+
 
            ngx_log_debug(NGX_LOG_DEBUG_HTTP, rpc_conf->log, 0 ,
                          "ngx_proc_rpc_process_one_cycle rpc_conf:%p, notify:%d task:%p done:%d ",
                          rpc_conf, rpc_conf->notify->event_fd, task, task->done_notify->event_fd);
     }
+
 
 
     ngx_shmtx_lock(&rpc_conf->queue->idles_lock);
@@ -326,5 +326,5 @@ static void ngx_proc_rpc_process_one_cycle(void * conf)
     rpc_conf->queue->idles.next = &rpc_conf->notify->idles;
     ngx_shmtx_unlock(&rpc_conf->queue->idles_lock);
 
-    ngx_log_error(NGX_LOG_INFO, rpc_conf->log, 0, " ngx_proc_rpc_process_one_cycle add proc:%p slot:%d to queue:% with notify:%p eventfd:%d",rpc_conf, ngx_process_slot, rpc_conf->queue, rpc_conf->notify, rpc_conf->notify->event_fd);
+    ngx_log_error(NGX_LOG_INFO, rpc_conf->log, 0, " ngx_proc_rpc_process_one_cycle add proc:%p slot:%d to queue:%p with notify:%p eventfd:%d",rpc_conf, ngx_process_slot, rpc_conf->queue, rpc_conf->notify, rpc_conf->notify->event_fd);
 }

@@ -18,37 +18,42 @@ void RpcChannel::destructor(void *p)
 }
 
 
-void RpcChannel::start_subrequest(const std::string& path,
+void RpcChannel::forward_request(const std::string& path,
                  const ::google::protobuf::Message* req,
                  ::google::protobuf::Message* res,
                  RpcCallHandler done)
 {
 
-    //ngx_rpc_task_t *task = NULL;
+    RpcChannel* new_channel = new RpcChannel(this->r);
 
-    this->req = (::google::protobuf::Message*)req;
-    this->res = res;
-    this->done = done;
+    new_channel->req = (::google::protobuf::Message*)req;
+    new_channel->res = res;
+    new_channel->done = done;
 
-    // a new task
+    NgxShmChainBufferWriter writer(task->res_bufs, task->pool);
 
+    bool ret = req->SerializeToZeroCopyStream(&writer);
+    task->res_length = writer.totaly;
+
+
+    // reuse this task
+    task->finish.handler = ngx_http_rpc_request_foward;
+    task->finish.p1 = r;
+
+    task->closure.handler = ngx_http_rpc_request_foward_done;
+    task->closure.p1      = new_channel;
+
+    strncpy(task->path, path.c_str(), path.size());
+
+    if(task->done_notify != NULL)
+         ngx_rpc_notify_push_task(task->done_notify, node);
+
+    //
 }
 
 
-void RpcChannel::finish_request(void* ctx, ngx_rpc_task_t *task)
+void RpcChannel::finish_request(ngx_rpc_task_t *task,void* ctx)
 {
 
-     /*
 
-    RpcChannel *channel = (RpcChannel *)c->r_ctx;
-
-    if(task->response_states == NGX_OK)
-    {
-        NgxShmChainBufferWriter writer(task->res_bufs, task->pool);
-        channel->res->SerializeToZeroCopyStream(&writer);
-    }
-
-
-   channel->currenthandler(channel,channel->req, channel->res, task->response_states);
-   */
 }

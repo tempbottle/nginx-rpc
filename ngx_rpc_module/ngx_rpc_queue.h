@@ -32,6 +32,7 @@ typedef struct {
 
     // it is diffcult to notify single pros or cons
     ngx_rpc_notify_t ** notify_slot;
+    int notify_num;
     // the length is ngx_last_process
 
 } ngx_rpc_queue_t;

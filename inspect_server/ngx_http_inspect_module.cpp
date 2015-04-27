@@ -246,50 +246,7 @@ static void ngx_inspect_process_exit(ngx_cycle_t* cycle)
     delete c->application_impl;
 }
 
-static void ngx_http_inspect_application_finish(ngx_rpc_task_t* _this, void *ctx)
-{
-    ngx_rpc_task_t* task = _this;
 
-    ngx_http_inspect_ctx_t *inspect_ctx = (ngx_http_inspect_ctx_t *)ctx;
-    ngx_http_request_t *r = inspect_ctx->r;
-
-    static ngx_str_t type = ngx_string(" application/x-protobuf");
-
-    r->headers_out.content_type = type;
-    r->headers_out.status = task->response_states;
-
-
-    if(task->res_length >= 0)
-    {
-        r->headers_out.content_length_n = task->res_length;
-        //r->connection->buffered |= NGX_HTTP_WRITE_BUFFERED;
-    }
-
-    int rc = ngx_http_send_header(r);
-
-    if(task->res_length > 0)
-    {
-        //find last
-        ngx_chain_t *ptr = &task->res_bufs;
-
-        for( ; ptr->next != NULL; ptr = ptr->next);
-        // last
-        ptr->buf->last_buf = 1;
-
-
-        rc = ngx_http_output_filter(r, &task->res_bufs);
-    }
-
-    ngx_pool_cleanup_t *p1 = ngx_pool_cleanup_add(r->connection->pool, 0);
-    p1->data = task;
-    p1->handler = ngx_http_rpc_task_destory;
-
-    ngx_log_error(NGX_LOG_INFO, task->log, 0,
-                  "ngx_http_inspect_application_finish task:%p status:%d size:%d, rc:%d",
-                  task, task->response_states, task->res_length,rc );
-
-    ngx_http_finalize_request(r, rc);
-}
 
 
 
@@ -349,8 +306,8 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
     task->closure.p1  =  inspect_ctx;
 
     // done
-    task->finish.handler = ngx_http_inspect_application_finish;
-    task->finish.p1 = inspect_ctx;
+    task->finish.handler = ngx_http_rpc_request_finish;
+    task->finish.p1 = r;
 
     
     // push queue
@@ -361,7 +318,7 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
         task->response_states = NGX_HTTP_INTERNAL_SERVER_ERROR;
         task->res_length = 0;
 
-        ngx_http_inspect_application_finish(task, inspect_ctx);
+        ngx_http_rpc_request_finish(task, r);
     }
 }
 
@@ -475,7 +432,6 @@ static void ngxrpc_inspect_application_interface(ngx_rpc_task_t* _this, void* p1
     inspect_ctx->cntl->req  = new ngxrpc::inspect::Request();
 
 
-
     NgxChainBufferReader reader(_this->req_bufs);
 
     if(!inspect_ctx->cntl->req->ParseFromZeroCopyStream(&reader))
@@ -509,8 +465,6 @@ static void ngxrpc_inspect_application_interface(ngx_rpc_task_t* _this, void* p1
 
 
 
-
-
 static void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,RpcChannel *channel,
                                                         const ::google::protobuf::Message* req,
                                                         ::google::protobuf::Message* res,
@@ -531,13 +485,15 @@ static void ngx_http_inspect_application_interface_done(ngx_rpc_task_t *task,Rpc
     delete channel->req;
     delete channel->res;
     delete channel;
+
+    // push the done task
+    if(task->done_notify != NULL)
+         ngx_rpc_notify_push_task(task->done_notify, node);
 }
 
 
 static void ngxrpc_inspect_application_requeststatus(ngx_rpc_task_t* _this, void* p1)
 {
-
-
 }
 
 

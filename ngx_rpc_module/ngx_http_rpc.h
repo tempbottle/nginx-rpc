@@ -39,7 +39,13 @@ typedef struct {
 } method_conf_t;
 
 
+//
+void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx);
+
+void ngx_http_rpc_request_foward(ngx_rpc_task_t* _this, void *ctx);
+
+void ngx_http_rpc_request_foward_done(ngx_rpc_task_t* _this, void *ctx){
 
 
-
+}
 #endif

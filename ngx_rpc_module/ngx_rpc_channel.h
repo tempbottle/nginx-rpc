@@ -44,14 +44,14 @@ public:
 
     int getResponseHeader();
 
-    void start_subrequest(const std::string& path,
+    void forward_request(const std::string& path,
                      const ::google::protobuf::Message* req,
                      ::google::protobuf::Message* res,
                      RpcCallHandler done);
 
 
 
-    static void finish_request(void* ctx,   ngx_rpc_task_t *task);
+    static void finish_request(ngx_rpc_task_t *task, void* ctx);
 
 
 public:

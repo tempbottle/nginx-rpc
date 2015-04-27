@@ -45,7 +45,7 @@ struct ngx_rpc_task_s {
 
 
     // for sub request
-    char interface[MAX_PATH_NAME];
+    char path[MAX_PATH_NAME];
     ngx_queue_t params;
 
     // for rpc request req & res
