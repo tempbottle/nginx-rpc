@@ -40,12 +40,13 @@ struct ngx_rpc_task_s {
     ngx_slab_pool_t *pool;
     ngx_log_t * log;
 
+    ngx_rpc_notify_t *proc_notify;
     ngx_rpc_notify_t *done_notify;
     ngx_queue_t node;
 
 
     // for sub request
-    char path[MAX_PATH_NAME];
+    u_char path[MAX_PATH_NAME];
     ngx_queue_t params;
 
     // for rpc request req & res
@@ -105,6 +106,8 @@ struct ngx_rpc_task_s {
 ngx_rpc_task_t *ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log);
 
 void ngx_http_rpc_task_destory(void *t);
+
+void ngx_http_rpc_task_set_bufs(ngx_slab_pool_t *pool, ngx_chain_t *req_bufs, ngx_chain_t* src_bufs);
 
 
 

@@ -108,7 +108,9 @@ bool NgxChainBufferWriter::Next(void** data, int* size)
 
         chain->buf->pos = chain->buf->last;
         chain->buf->last = chain->buf->end;
+
     }else{
+
         // allocate new buff
         *size = default_size * extends;
         //chain->buf = ngx_create_temp_buf(pool, *size);
@@ -158,25 +160,32 @@ NgxShmChainBufferWriter::NgxShmChainBufferWriter(ngx_chain_t& ch, ngx_slab_pool_
 bool NgxShmChainBufferWriter::Next(void** data, int* size)
 {
 
-    // need allocate new chain
-    if(chain->buf != NULL && chain->buf->last == chain->buf->end)
+    // clear all las, ptr is the last
+    ngx_chain_t *ptr = chain;
+    for( ; ptr->next != NULL; ptr = ptr->next)
     {
-        chain->next = (ngx_chain_t*)
+        ptr->buf->last_buf = 0;
+    }
+
+    // need allocate new chain
+    if(ptr->buf != NULL && ptr->buf->last == ptr->buf->end)
+    {
+        ptr->next = (ngx_chain_t*)
                 ngx_slab_alloc(pool, sizeof(ngx_chain_t));
 
-        chain = chain->next;
-        chain->next = NULL;
-        chain->buf = NULL;
+        ptr = ptr->next;
+        ptr->next = NULL;
+        ptr->buf = NULL;
     }
 
     // if skiped has called
-    if(chain->buf)
+    if(ptr->buf)
     {
-        *size = chain->buf->end - chain->buf->last;
-        *data = chain->buf->last;
+        *size = ptr->buf->end - ptr->buf->last;
+        *data = ptr->buf->last;
 
-        chain->buf->pos = chain->buf->last;
-        chain->buf->last = chain->buf->end;
+        ptr->buf->pos = ptr->buf->last;
+        ptr->buf->last = ptr->buf->end;
 
     }else{
         // allocate new buff
@@ -189,13 +198,14 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
         b->pos   = b->start;
         b->last = b->start + *size;
         b->end   = b->last;
+        b->last_buf = 1;
 
         b->temporary = 0;
         b->memory    = 1;
 
         *data = b->pos;
 
-        chain->buf = b;
+        ptr->buf = b;
         extends += 1;
     }
 

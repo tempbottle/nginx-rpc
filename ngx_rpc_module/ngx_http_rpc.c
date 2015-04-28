@@ -105,8 +105,9 @@ static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle)
     rpc_conf->notify->write_hanlder = ngx_http_rpc_process_notify_task;
 
     ngx_log_error(NGX_LOG_WARN,cycle->log, 0,
-                  "ngx_http_rpc_init_process rpc_conf:%p queue:%p notify :%p eventfd:%p",
+                  "ngx_http_rpc_init_process rpc_conf:%p queue:%p notify :%p eventfd:%d",
                   rpc_conf, rpc_conf->proc_queue, rpc_conf->notify, rpc_conf->notify->event_fd);
+
     return NGX_OK;
 }
 
@@ -169,11 +170,7 @@ void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx)
     if(task->res_length > 0)
     {
         //find last
-        ngx_chain_t *ptr = &task->res_bufs;
 
-        for( ; ptr->next != NULL; ptr = ptr->next);
-        // set last
-        ptr->buf->last_buf = 1;
 
         rc = ngx_http_output_filter(r, &task->res_bufs);
     }
@@ -190,7 +187,69 @@ void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx)
     ngx_http_finalize_request(r, rc);
 }
 
+static ngx_int_t
+ngx_http_rpc_subrequest_done_handler(ngx_http_request_t *r, void *data, ngx_int_t rc)
+{
+    //ngx_http_request_t *pr = r->parent;
+    ngx_rpc_task_t* task = (ngx_rpc_task_t*)data;
 
+    task->response_states = r->headers_out.status;
+
+    if(task->response_states == NGX_HTTP_OK)
+    {
+        ngx_http_rpc_task_set_bufs(task->pool, &task->req_bufs, r->upstream->out_bufs);
+    }
+
+    ngx_rpc_notify_push_task(task->proc_notify, &task->node);
+
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "ngx_http_rpc_subrequest_done_handler task:%p status:%s nofity:%p", task, r->headers_out.status, task->proc_notify);
+
+    return NGX_OK;
+}
+
+int ngx_http_header_modify_content_length(ngx_http_request_t *r, ngx_int_t value)
+{
+    r->headers_in.content_length_n = value;
+
+    ngx_list_part_t *part =  &r->headers_in.headers.part;
+    ngx_table_elt_t *header = (ngx_table_elt_t *)part->elts;
+    unsigned int i = 0;
+    for( i = 0; /* void */ ; i++)
+    {
+        if(i >= part->nelts)
+        {
+            if( part->next  == NULL)
+            {
+                break;
+            }
+
+            part = part->next;
+            header = (ngx_table_elt_t *)part->elts;
+            i = 0;
+        }
+
+        if(header[i].hash == 0)
+        {
+            continue;
+        }
+
+        if(0 == ngx_strncasecmp(header[i].key.data,
+                                (u_char*)"Content-Length:",
+                                header[i].key.len))
+        {
+
+            header[i].value.data = (u_char *)ngx_palloc(r->pool, 32);
+            header[i].value.len = 32;
+
+            snprintf((char*)header[i].value.data,
+                     32, "%ld", value);
+            r->headers_in.content_length->value =  header[i].value;
+
+            return NGX_OK;
+        }
+    }
+    return NGX_ERROR;
+}
 
 void ngx_http_rpc_request_foward(ngx_rpc_task_t* _this, void *ctx)
 {
@@ -198,15 +257,24 @@ void ngx_http_rpc_request_foward(ngx_rpc_task_t* _this, void *ctx)
     ngx_rpc_task_t* task = _this;
     ngx_http_request_t *r = ctx;
 
-    // reuse the task
+    ngx_http_post_subrequest_t *psr =
+            ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
 
+    psr->handler = ngx_http_rpc_subrequest_done_handler;
+    psr->data = task;
 
+    r->request_body->bufs = &task->req_bufs;
+    ngx_http_header_modify_content_length(r, task->res_length);
 
+    ngx_str_t forward = { strlen((char*)task->path), task->path};
 
+    ngx_http_request_t *sr;
 
+    ngx_int_t rc = ngx_http_subrequest(r, &forward, NULL, &sr, psr, NGX_HTTP_SUBREQUEST_IN_MEMORY);
+
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                  " start sub request %V task:%p content:%d rc:%d",
+                  &forward, task, task->res_length, rc);
 }
 
 
-void ngx_http_rpc_request_foward_done(ngx_rpc_task_t* _this, void *ctx){
-
-}

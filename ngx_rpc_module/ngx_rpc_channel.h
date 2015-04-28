@@ -51,7 +51,11 @@ public:
 
 
 
-    static void finish_request(ngx_rpc_task_t *task, void* ctx);
+    static void foward_done(ngx_rpc_task_t* _this, void *ctx);
+    static void finish_request(RpcChannel *channel,
+                               const ::google::protobuf::Message* req,
+                               ::google::protobuf::Message* res,
+                               int result);
 
 
 public:
@@ -60,6 +64,8 @@ public:
 
     ::google::protobuf::Message *req;
     ::google::protobuf::Message *res;
+
+    RpcChannel* pre_cntl;
     RpcCallHandler  done;
 };
 

@@ -44,20 +44,20 @@ public:
 
 
          ::ngxrpc::inspect::Request* new_request = request->New();
-          new_request->CopyFrom(request);
+          new_request->CopyFrom(*request);
 
          ::ngxrpc::inspect::Response* new_respone = response->New();
 
-         channel->forward_request("/ngxrpc", request, response, forward_done);
+         channel->forward_request("/ngxrpc", new_request, new_respone, forward_done);
     }
 
     void requeststatus_forward_done(RpcChannel *orgin_channel,
-                                    const ::ngxrpc::inspect::Request* orgin_request,
+                                    const  ::google::protobuf::Message* orgin_request,
                                     ::ngxrpc::inspect::Response* orgin_response,
 
                                     RpcChannel *new_channel,
-                                    const ::ngxrpc::inspect::Request* new_request,
-                                     ::ngxrpc::inspect::Response* new_response,
+                                    const ::google::protobuf::Message* new_request,
+                                    ::google::protobuf::Message* new_response,
                                     int new_status)
     {
         // do process
@@ -77,7 +77,7 @@ public:
                    RpcCallHandler done )
     {
 
-        channel->start_subrequest("/ngxrpc/inspect/Application/interface",request, response, done);
+        channel->forward_request("/ngxrpc/inspect/Application/interface",request, response, done);
     }
 
 
@@ -86,7 +86,7 @@ public:
                        ::ngxrpc::inspect::Response* response,
                        RpcCallHandler done)
     {
-        channel->start_subrequest("/ngxrpc/inspect/Application/interface",request, response, done);
+        channel->forward_request("/ngxrpc/inspect/Application/interface",request, response, done);
     }
 public:
 };

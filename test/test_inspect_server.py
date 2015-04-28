@@ -25,9 +25,9 @@ if __name__ == '__main__':
     req = urllib2.Request(url)
     req.add_header('Content-Type', 'application/json')
 
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
     start  = time.time()
-    response = opener.open(req, data)
+    response = urllib2.urlopen(url, data)
+    
     res = Response()
     res.ParseFromString(response.read())
     print "time:%f, res:%s" % ((time.time() - start ), res.json)

@@ -501,7 +501,6 @@ SOURCES += inspect_server/inspect.pb.h \
            thirdparty/protobuf/protobuf-master/src/google/protobuf/compiler/javanano/javanano_primitive_field.h \
            thirdparty/protobuf/protobuf-master/src/google/protobuf/compiler/python/python_generator.h \
            thirdparty/protobuf/protobuf-master/src/google/protobuf/compiler/ruby/ruby_generator.h \
-    ngx_rpc_module/ngx_http_rpc_subrequest.cpp \
     ngx_rpc_module/ngx_http_rpc.c \
     ngx_rpc_module/ngx_rpc_unix_socket.c
 SOURCES += \
@@ -937,8 +936,7 @@ SOURCES += \
            thirdparty/protobuf/protobuf-master/src/google/protobuf/compiler/python/python_plugin_unittest.cc \
            thirdparty/protobuf/protobuf-master/src/google/protobuf/compiler/ruby/ruby_generator.cc
 
-SOURCES += \
-    ngx_rpc_module/ngx_http_rpc_subrequest.h
+SOURCES +=
 
 OTHER_FILES += \
     ngx_rpc_module/config \
