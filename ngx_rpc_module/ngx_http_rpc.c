@@ -200,9 +200,11 @@ ngx_http_rpc_subrequest_done_handler(ngx_http_request_t *r, void *data, ngx_int_
         ngx_http_rpc_task_set_bufs(task->pool, &task->req_bufs, r->upstream->out_bufs);
     }
 
-    ngx_rpc_notify_push_task(task->proc_notify, &task->node);
+    ngx_rpc_notify_push_task(task->done_notify, &task->node);
 
-    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "ngx_http_rpc_subrequest_done_handler task:%p status:%s nofity:%p", task, r->headers_out.status, task->proc_notify);
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+                  "ngx_http_rpc_subrequest_done_handler task:%p status:%d nofity:%p",
+                  task, r->headers_out.status, task->done_notify);
 
     return NGX_OK;
 }
@@ -275,6 +277,9 @@ void ngx_http_rpc_request_foward(ngx_rpc_task_t* _this, void *ctx)
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                   " start sub request %V task:%p content:%d rc:%d",
                   &forward, task, task->res_length, rc);
+
+    // why ?
+    sr->write_event_handler(sr);
 }
 
 

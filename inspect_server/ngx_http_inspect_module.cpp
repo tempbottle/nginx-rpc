@@ -373,7 +373,7 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
         inspect_ctx->mth = mth;
 
         inspect_ctx->log = inspect_conf->log->file== NULL ?
-                    r->connection->log : inspect_conf->log;
+                    r->connection->log : ngx_cycle->log;
 
         ngx_http_set_ctx(r, inspect_ctx, ngx_http_inspect_module);
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "ngx_http_inspect_http_handler init the inspect_ctx");
@@ -385,7 +385,7 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
     ngx_log_error(NGX_LOG_WARN, r->connection->log, 0, "Method:%s,url:%V rc:%d!",
                   r->request_start, &(r->uri), rc);
 
-    return rc;
+    return NGX_OK;
 }
 
 

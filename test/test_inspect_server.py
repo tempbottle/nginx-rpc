@@ -16,7 +16,7 @@ import urllib2
 
 if __name__ == '__main__':
 
-    url = "http://10.25.66.77:8081/ngxrpc/inspect/application/interface"
+    url = "http://10.25.66.77:8081/ngxrpc/inspect/application/requeststatus"
 
     reqpb = Request()
     reqpb.json = "hehe"

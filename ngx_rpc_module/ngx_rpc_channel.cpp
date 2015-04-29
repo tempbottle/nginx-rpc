@@ -28,7 +28,7 @@ void RpcChannel::foward_done(ngx_rpc_task_t* task, void *ctx)
     bool ret = new_channel->res->ParseFromZeroCopyStream(&reader);
     new_channel->done(new_channel->pre_cntl, new_channel->req, new_channel->res, task->response_states);
 
-    ngx_log_error(NGX_LOG_INFO,task->log, 0, " foward_done task:%p, status:%d parse:%d",ret);
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, " foward_done task:%p, status:%d parse:%d",ret);
 }
 
 void RpcChannel::forward_request(const std::string& path,
@@ -62,7 +62,8 @@ void RpcChannel::forward_request(const std::string& path,
     if(task->done_notify != NULL)
          ngx_rpc_notify_push_task(task->done_notify, &task->node);
 
-    ngx_log_error(NGX_LOG_INFO, this->r->connection->log, 0, "forward_request SerializeToZeroCopyStream:%d res_length:%d nofity:%p path:%s",
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                  "forward_request SerializeToZeroCopyStream:%d res_length:%d nofity:%p path:%s",
                   ret, task->res_length, task->done_notify, task->path);
 
 }

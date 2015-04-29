@@ -40,7 +40,6 @@ struct ngx_rpc_task_s {
     ngx_slab_pool_t *pool;
     ngx_log_t * log;
 
-    ngx_rpc_notify_t *proc_notify;
     ngx_rpc_notify_t *done_notify;
     ngx_queue_t node;
 
