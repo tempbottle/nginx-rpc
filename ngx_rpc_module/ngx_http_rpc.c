@@ -279,7 +279,8 @@ void ngx_http_rpc_request_foward(ngx_rpc_task_t* _this, void *ctx)
                   &forward, task, task->res_length, rc);
 
     // why ?
-    sr->write_event_handler(sr);
+   // sr->write_event_handler(sr);
+    ngx_http_finalize_request(r, NGX_AGAIN);
 }
 
 

@@ -48,7 +48,7 @@ public:
 
          ::ngxrpc::inspect::Response* new_respone = response->New();
 
-         channel->forward_request("/ngxrpc/inspect/application/requeststatus", new_request, new_respone, forward_done);
+         channel->forward_request("/ngxrpc/inspect/application/interface", new_request, new_respone, forward_done);
     }
 
     void requeststatus_forward_done(RpcChannel *orgin_channel,
