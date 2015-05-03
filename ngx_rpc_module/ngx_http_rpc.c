@@ -190,14 +190,17 @@ void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx)
 static ngx_int_t
 ngx_http_rpc_subrequest_done_handler(ngx_http_request_t *r, void *data, ngx_int_t rc)
 {
-    //ngx_http_request_t *pr = r->parent;
+    ngx_http_request_t *pr = r->parent;
     ngx_rpc_task_t* task = (ngx_rpc_task_t*)data;
 
     task->response_states = r->headers_out.status;
 
-    if(task->response_states == NGX_HTTP_OK)
+
+    //
+
+    if(task->response_states == NGX_HTTP_OK )
     {
-        ngx_http_rpc_task_set_bufs(task->pool, &task->req_bufs, r->upstream->out_bufs);
+        ngx_http_rpc_task_set_bufs(task->pool, &task->req_bufs, r->upstream ? r->upstream->out_bufs : r->request_body->bufs);
     }
 
     ngx_rpc_notify_push_task(task->done_notify, &task->node);
@@ -278,9 +281,7 @@ void ngx_http_rpc_request_foward(ngx_rpc_task_t* _this, void *ctx)
                   " start sub request %V task:%p content:%d rc:%d",
                   &forward, task, task->res_length, rc);
 
-    // why ?
-   // sr->write_event_handler(sr);
-    ngx_http_finalize_request(r, NGX_AGAIN);
+     ngx_http_run_posted_requests(r->connection);
 }
 
 

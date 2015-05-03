@@ -267,7 +267,8 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
     task->done_notify = inspect_ctx->rpc_conf->notify;
 
     // 2 copy the request bufs
-     ngx_http_rpc_task_set_bufs(task->pool, &task->req_bufs, r->request_body->bufs);
+    ngx_http_rpc_task_set_bufs(task->pool, &task->req_bufs, r->request_body->bufs);
+    task->res_length = r->headers_in.content_length_n;
 
     // processor
     task->closure.handler = inspect_ctx->mth->handler;
@@ -277,7 +278,6 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
     task->finish.handler = ngx_http_rpc_request_finish;
     task->finish.p1 = r;
 
-    
     // push queue
     int ret = ngx_rpc_queue_push_and_notify(inspect_ctx->rpc_conf->proc_queue, task);
 
@@ -380,10 +380,11 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
     }
 
     // 2 forward to the post handler
-    ngx_int_t rc = ngx_http_read_client_request_body(r, ngx_http_inspect_post_async_handler);
+    ngx_int_t rc = ngx_http_read_client_request_body(r,
+                                               ngx_http_inspect_post_async_handler);
 
-    ngx_log_error(NGX_LOG_WARN, r->connection->log, 0, "Method:%s,url:%V rc:%d!",
-                  r->request_start, &(r->uri), rc);
+    ngx_log_error(NGX_LOG_WARN, r->connection->log, 0, "Method:%V, url:%V rc:%d!",
+                  &r->method_name, &(r->uri), rc);
 
     return NGX_OK;
 }
@@ -428,7 +429,6 @@ static void ngxrpc_inspect_application_interface(ngx_rpc_task_t* _this, void* p1
                                              (ngxrpc::inspect::Response*)inspect_ctx->cntl->res,
                                              inspect_ctx->cntl->done);
 }
-
 
 
 

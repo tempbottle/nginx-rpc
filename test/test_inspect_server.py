@@ -16,7 +16,7 @@ import urllib2
 
 if __name__ == '__main__':
 
-    url = "http://10.25.66.77:8081/ngxrpc/inspect/application/requeststatus"
+    url = "http://127.0.0.1:8081/ngxrpc/inspect/application/requeststatus"
 
     reqpb = Request()
     reqpb.json = "hehe"
@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     start  = time.time()
     response = urllib2.urlopen(url, data)
-    
+
     res = Response()
     res.ParseFromString(response.read())
     print "time:%f, res:%s" % ((time.time() - start ), res.json)
