@@ -45,7 +45,7 @@ public:
     ngx_chain_t *chain;
     ngx_pool_t* pool;
 
-    unsigned int totaly;
+    int totaly;
 
     unsigned int extends;
     unsigned int default_size;
@@ -68,7 +68,8 @@ public:
 public:
     ngx_chain_t *chain;
     ngx_slab_pool_t* pool;
-    unsigned int totaly;
+
+    int totaly;
 
     unsigned int extends;
     unsigned int default_size;

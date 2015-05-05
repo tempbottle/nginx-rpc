@@ -137,11 +137,11 @@ static void ngx_http_rpc_process_notify_task(void *ctx)
     {
         ngx_rpc_task_t * task = ngx_queue_data(pending, ngx_rpc_task_t, node);
 
-        task->finish.handler(task, task->finish.p1);
-
         ngx_log_debug(NGX_LOG_DEBUG_HTTP, conf->log, 0 ,
                       "ngx_http_rpc_process_notify_task rpc_conf:%p, notify_eventfd:%d task:%p done_eventfd:%d ",
                       conf, conf->notify->event_fd, task, task->done_notify->event_fd);
+
+        task->finish.handler(task, task->finish.p1);
     }
 }
 
@@ -170,8 +170,6 @@ void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx)
     if(task->res_length > 0)
     {
         //find last
-
-
         rc = ngx_http_output_filter(r, &task->res_bufs);
     }
 
@@ -190,24 +188,23 @@ void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx)
 static ngx_int_t
 ngx_http_rpc_subrequest_done_handler(ngx_http_request_t *r, void *data, ngx_int_t rc)
 {
-    ngx_http_request_t *pr = r->parent;
+    // ngx_http_request_t *pr = r->parent;
     ngx_rpc_task_t* task = (ngx_rpc_task_t*)data;
 
     task->response_states = r->headers_out.status;
-
 
     //
 
     if(task->response_states == NGX_HTTP_OK )
     {
-        ngx_http_rpc_task_set_bufs(task->pool, &task->req_bufs, r->upstream ? r->upstream->out_bufs : r->request_body->bufs);
+        ngx_http_rpc_task_set_bufs(task->pool, &task->req_bufs, r->upstream ? r->upstream->out_bufs : r->postponed->out);
     }
 
-    ngx_rpc_notify_push_task(task->done_notify, &task->node);
+    ngx_rpc_notify_push_task(task->proc_notify, &task->node);
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                  "ngx_http_rpc_subrequest_done_handler task:%p status:%d nofity:%p",
-                  task, r->headers_out.status, task->done_notify);
+                  "ngx_http_rpc_subrequest_done_handler task:%p status:%d nofity eventfd:%d",
+                  task, r->headers_out.status, task->proc_notify->event_fd);
 
     return NGX_OK;
 }

@@ -29,7 +29,7 @@ ngx_log_t* get_cache_log();
            std::stringstream str; \
            str << p; \
            const std::string &s = str.str(); \
-           ngx_log_debug(NGX_LOG_DEBUG_ALL, get_cache_log(), 0, "%s",s.c_str()); \
+           ngx_log_debug(NGX_LOG_DEBUG_ALL, ngx_cycle->log, 0, "%s",s.c_str()); \
        } while(0);
 
 #define INFO(p) \
@@ -37,7 +37,7 @@ ngx_log_t* get_cache_log();
            std::stringstream str; \
            str << p; \
            const std::string &s = str.str(); \
-           ngx_log_error(NGX_LOG_INFO, get_cache_log(), 0, "%s", s.c_str()); \
+           ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, "%s", s.c_str()); \
        } while(0);
 
 #define WARN(p) \
@@ -45,7 +45,7 @@ ngx_log_t* get_cache_log();
            std::stringstream str; \
            str << p; \
            const std::string &s = str.str(); \
-           ngx_log_error(NGX_LOG_ERR, get_cache_log(), 0, "%s", s.c_str()); \
+           ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0, "%s", s.c_str()); \
        } while(0);
 
 #define ERROR(p) \
@@ -53,7 +53,7 @@ ngx_log_t* get_cache_log();
            std::stringstream str; \
            str << p; \
            const std::string &s = str.str(); \
-           ngx_log_error(NGX_LOG_ERR, get_cache_log(), 0,"%s", s.c_str()); \
+           ngx_log_error(NGX_LOG_ERR, ngx_cycle->log, 0,"%s", s.c_str()); \
        } while(0);
 
 #endif

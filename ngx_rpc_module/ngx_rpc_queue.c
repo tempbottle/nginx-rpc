@@ -87,11 +87,10 @@ int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, ngx_rpc_task_t* task)
 
     }
 
+    task->proc_notify = ngx_queue_data(proc_notify, ngx_rpc_notify_t, idles);
 
 
-    ngx_rpc_notify_t* n = ngx_queue_data(proc_notify, ngx_rpc_notify_t, idles);
-
-    return ngx_rpc_notify_push_task(n , &task->node);
+    return ngx_rpc_notify_push_task(task->proc_notify , &task->node);
 
 }
 

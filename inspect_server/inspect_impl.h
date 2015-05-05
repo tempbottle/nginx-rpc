@@ -23,6 +23,9 @@ public:
      {
          response->set_json("hehe");
          // TODO your process
+
+         DEBUG("interface response:"<<response->json());
+
          done(channel, request, response, NGX_HTTP_OK);
      }
 
@@ -33,6 +36,7 @@ public:
      {
 
          // TODO your process
+         channel->done = done;
 
          RpcCallHandler forward_done = std::bind(&ApplicationServer::requeststatus_forward_done, this,
                                                  channel, request, response,
@@ -52,7 +56,7 @@ public:
     }
 
     void requeststatus_forward_done(RpcChannel *orgin_channel,
-                                    const  ::google::protobuf::Message* orgin_request,
+                                    const  ::ngxrpc::inspect::Request * orgin_request,
                                     ::ngxrpc::inspect::Response* orgin_response,
 
                                     RpcChannel *new_channel,
@@ -61,6 +65,10 @@ public:
                                     int new_status)
     {
         // do process
+
+       ((::ngxrpc::inspect::Response *)new_response)->set_json(orgin_response->json());
+        DEBUG("requeststatus_forward_done orgin_response:"<<orgin_response->json());
+
         orgin_channel->done(new_channel, new_request, new_response, new_status);
     }
 

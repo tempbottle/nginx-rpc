@@ -274,10 +274,6 @@ static void ngx_http_inspect_post_async_handler(ngx_http_request_t *r)
     task->closure.handler = inspect_ctx->mth->handler;
     task->closure.p1  =  inspect_ctx;
 
-    // done
-    task->finish.handler = ngx_http_rpc_request_finish;
-    task->finish.p1 = r;
-
     // push queue
     int ret = ngx_rpc_queue_push_and_notify(inspect_ctx->rpc_conf->proc_queue, task);
 
@@ -443,6 +439,13 @@ static void ngxrpc_inspect_application_requeststatus(ngx_rpc_task_t* _this, void
 
     inspect_ctx->cntl->task = _this;
     inspect_ctx->cntl->req  = new ngxrpc::inspect::Request();
+    inspect_ctx->cntl->res = new ngxrpc::inspect::Response();
+
+    inspect_ctx->cntl->done =  std::bind(&RpcChannel::finish_request,
+                            std::placeholders::_1,
+                            std::placeholders::_2,
+                            std::placeholders::_3,
+                            std::placeholders::_4);
 
 
     NgxChainBufferReader reader(_this->req_bufs);
@@ -460,13 +463,6 @@ static void ngxrpc_inspect_application_requeststatus(ngx_rpc_task_t* _this, void
         return;
     }
 
-    inspect_ctx->cntl->res = new ngxrpc::inspect::Response();
-
-    inspect_ctx->cntl->done =  std::bind(&RpcChannel::finish_request,
-                            std::placeholders::_1,
-                            std::placeholders::_2,
-                            std::placeholders::_3,
-                            std::placeholders::_4);
 
     inspect_ctx->application_impl->requeststatus(inspect_ctx->cntl,
                                              (ngxrpc::inspect::Request*)inspect_ctx->cntl->req,

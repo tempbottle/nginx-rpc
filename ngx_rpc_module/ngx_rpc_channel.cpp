@@ -26,9 +26,12 @@ void RpcChannel::foward_done(ngx_rpc_task_t* task, void *ctx)
     NgxChainBufferReader reader(task->req_bufs);
 
     bool ret = new_channel->res->ParseFromZeroCopyStream(&reader);
+
     new_channel->done(new_channel->pre_cntl, new_channel->req, new_channel->res, task->response_states);
 
-    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, " foward_done task:%p, status:%d parse:%d",ret);
+
+
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, " foward_done task:%p, status:%d parse:%d", task, task->response_states, ret);
 }
 
 void RpcChannel::forward_request(const std::string& path,
@@ -82,14 +85,19 @@ void RpcChannel::finish_request(RpcChannel *channel, const google::protobuf::Mes
                   "SerializeToZeroCopyStream:%d size:%d,expect:%d notify fd:%d",
                   ret, task->res_length, ex, task->done_notify->event_fd);
 
+    // push the done task
+    if(task->done_notify != NULL)
+    {
+        // done
+        task->finish.handler = ngx_http_rpc_request_finish;
+        task->finish.p1 = channel->r;
+        ngx_rpc_notify_push_task(task->done_notify, &(task->node));
+    }
+
     // clean the channel
     delete channel->req;
     delete channel->res;
     delete channel;
-
-    // push the done task
-    if(task->done_notify != NULL)
-         ngx_rpc_notify_push_task(task->done_notify, &(task->node));
 }
 
 

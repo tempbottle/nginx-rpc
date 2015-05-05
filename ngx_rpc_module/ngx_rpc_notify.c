@@ -56,10 +56,10 @@ static void ngx_rpc_notify_read_handler(ngx_event_t *ev){
         ngx_log_debug(NGX_LOG_DEBUG_ALL, ev->log, 0,
                       "ngx_rpc_notify_read_handler notify:%p eventfd:%d signal:%d ,ret:%d",
                       notify, notify->event_fd, signal, ret);
+
+        notify->read_hanlder(notify->ctx);
+
     }while(ret > 0);
-
-    notify->read_hanlder(notify->ctx);
-
 }
 
 static void ngx_rpc_notify_write_handler(ngx_event_t *ev)

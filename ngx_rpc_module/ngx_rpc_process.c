@@ -312,7 +312,7 @@ static void ngx_proc_rpc_process_one_cycle(void * conf)
 
 
            ngx_log_debug(NGX_LOG_DEBUG_HTTP, rpc_conf->log, 0 ,
-                         "ngx_proc_rpc_process_one_cycle rpc_conf:%p, notify:%d task:%p done:%d ",
+                         "ngx_proc_rpc_process_one_cycle rpc_conf:%p, notify:%d task:%p done eventfd:%d ",
                          rpc_conf, rpc_conf->notify->event_fd, task, task->done_notify->event_fd);
     }
 

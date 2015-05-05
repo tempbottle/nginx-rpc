@@ -12,8 +12,8 @@ typedef struct {
     void* value;
 } ngx_rpc_task_params_t;
 
-
 typedef struct ngx_rpc_task_s ngx_rpc_task_t;
+
 
 typedef struct {
     void (*handler)(ngx_rpc_task_t* _this, void *p1);
@@ -36,13 +36,17 @@ typedef struct {
 ///
 struct ngx_rpc_task_s {
 
+    ngx_queue_t node;
+    ngx_rpc_notify_t *proc_notify;
+    ngx_rpc_notify_t *done_notify;
     volatile ngx_uint_t refcount;
+
+
+    // closure
+    task_closure_t closure;
+    task_closure_t finish;
     ngx_slab_pool_t *pool;
     ngx_log_t * log;
-
-    ngx_rpc_notify_t *done_notify;
-    ngx_queue_t node;
-
 
     // for sub request
     u_char path[MAX_PATH_NAME];
@@ -52,18 +56,16 @@ struct ngx_rpc_task_s {
     ngx_chain_t req_bufs;
     ngx_chain_t res_bufs;
     ngx_int_t  res_length;
-
-    // closure
-    task_closure_t closure;
-    task_closure_t finish;
-
-
     // mertics
     int response_states;
     ngx_uint_t time_out_ms;
 
     task_metric_t metric;
+
+
 };
+
+
 
 
 //// Some helper

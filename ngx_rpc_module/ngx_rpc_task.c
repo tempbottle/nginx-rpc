@@ -22,6 +22,9 @@ ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log)
 
     ngx_queue_init(&task->node);
 
+    ngx_log_error(NGX_LOG_DEBUG, log, 0,
+                  " ngx_http_rpc_task_create task:%p with nodo:%p", task, &task->node);
+
     return task;
 }
 
@@ -49,9 +52,13 @@ void ngx_http_rpc_task_destory(void *t){
         for( ;ptr && ptr->buf != NULL;ptr= ptr->next)
             ngx_slab_free(pool, ptr->buf->start);
     }
+    ngx_log_error(NGX_LOG_DEBUG, task->log, 0,
+                  " ngx_http_rpc_task_destory task:%p with nodo:%p", task, &task->node);
 
     // free task
     ngx_slab_free(pool, task);
+
+
 }
 
 void ngx_http_rpc_task_set_bufs(ngx_slab_pool_t *pool, ngx_chain_t* req_bufs, ngx_chain_t* src_bufs)
@@ -80,7 +87,7 @@ void ngx_http_rpc_task_set_bufs(ngx_slab_pool_t *pool, ngx_chain_t* req_bufs, ng
     ptr = &req_bufs;
     (*ptr)->next  = NULL;
 
-    for(; src_bufs != NULL; src_bufs = src_bufs->next )
+    for(; src_bufs != NULL && src_bufs->buf != NULL ; src_bufs = src_bufs->next )
     {
         ngx_uint_t size = src_bufs->buf->last - src_bufs->buf->pos;
 

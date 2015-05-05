@@ -141,7 +141,7 @@ void NgxChainBufferWriter::BackUp(int count)
     chain->buf->last -= count;
 
     assert(chain->buf->last >= chain->buf->pos);
-    assert(totaly>0);
+    assert(totaly >= 0);
 }
 
 ////////////////////////////
@@ -219,7 +219,7 @@ void NgxShmChainBufferWriter::BackUp(int count)
     chain->buf->last -= count;
 
     assert(chain->buf->last >= chain->buf->pos);
-    assert(totaly>0);
+    assert(totaly >= 0);
 }
 
 
