@@ -17,7 +17,7 @@ import urllib2
 if __name__ == '__main__':
 
     url = "http://127.0.0.1:8081/ngxrpc/inspect/application/requeststatus"
-
+    #url = "http://127.0.0.1:8081/ngxrpc/inspect/application/interface"
     reqpb = Request()
     reqpb.json = "hehe2"
     data = reqpb.SerializeToString()

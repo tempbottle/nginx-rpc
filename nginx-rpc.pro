@@ -502,7 +502,8 @@ SOURCES += inspect_server/inspect.pb.h \
            thirdparty/protobuf/protobuf-master/src/google/protobuf/compiler/python/python_generator.h \
            thirdparty/protobuf/protobuf-master/src/google/protobuf/compiler/ruby/ruby_generator.h \
     ngx_rpc_module/ngx_http_rpc.c \
-    ngx_rpc_module/ngx_rpc_unix_socket.c
+    ngx_rpc_module/ngx_rpc_unix_socket.c \
+    inspect_server/inspect_impl.cpp
 SOURCES += \
            inspect_server/inspect.pb.cc \
            inspect_server/ngx_http_inspect_module.cpp \

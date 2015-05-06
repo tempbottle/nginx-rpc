@@ -4,7 +4,8 @@
 #include <ngx_core.h>
 #include "ngx_rpc_notify.h"
 
-#define MAX_PATH_NAME 32
+#define MAX_PATH_NAME 128
+
 // http key value
 typedef struct {
     ngx_queue_t next;

@@ -10,7 +10,7 @@ ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool, ngx_log_t* log, i
         ngx_log_error(NGX_LOG_INFO, log, 0,
                       "ngx_slab_alloc:%p alloc:%d failed ",
                       shpool, sizeof(ngx_rpc_queue_t));
-         return NULL;
+        return NULL;
     }
 
     q->pool = shpool;
@@ -38,7 +38,7 @@ ngx_rpc_queue_t *ngx_rpc_queue_create(ngx_slab_pool_t *shpool, ngx_log_t* log, i
     }
 
     ngx_log_error(NGX_LOG_DEBUG, log, 0,
-                 "ngx_rpc_queue_create queue:%p notify_num:%d", q, notify_num);
+                  "ngx_rpc_queue_create queue:%p notify_num:%d", q, notify_num);
 
     return q;
 }
@@ -52,7 +52,7 @@ int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue)
     int c = 0;
     for( ; c < queue->notify_num; ++c)
     {
-       ngx_rpc_notify_free(queue->notify_slot[c]);
+        ngx_rpc_notify_free(queue->notify_slot[c]);
     }
 
     ngx_slab_free(queue->pool, queue->notify_slot);
@@ -65,30 +65,32 @@ int ngx_rpc_queue_destory(ngx_rpc_queue_t *queue)
 int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, ngx_rpc_task_t* task)
 {
 
-    ngx_queue_t* proc_notify = NULL;
+    ngx_queue_t* proc_notify_node = NULL;
 
     ngx_shmtx_lock(&queue->idles_lock);
 
     if(!ngx_queue_empty(&queue->idles))
     {
-        proc_notify = queue->idles.next;
+        proc_notify_node = queue->idles.next;
 
-        queue->idles.next = proc_notify->next;
-        proc_notify->next->prev = &queue->idles;
+        queue->idles.next = proc_notify_node->next;
+        proc_notify_node->next->prev = &queue->idles;
     }
 
     ngx_shmtx_unlock(&queue->idles_lock);
 
-    if( proc_notify == NULL)
+    if( proc_notify_node == NULL)
     {
-          ngx_log_error(NGX_LOG_INFO, queue->log, 0, "ngx_rpc_queue_push_and_notify no proc_notify in idles, queue:%p",queue );
+        ngx_log_error(NGX_LOG_INFO, queue->log, 0, "ngx_rpc_queue_push_and_notify no proc_notify in idles, queue:%p", queue);
 
         return NGX_ERROR;
-
     }
 
-    task->proc_notify = ngx_queue_data(proc_notify, ngx_rpc_notify_t, idles);
+    task->proc_notify = ngx_queue_data(proc_notify_node, ngx_rpc_notify_t, idles);
 
+    ngx_log_error(NGX_LOG_INFO, queue->log, 0,
+                  "ngx_rpc_queue_push_and_notify push task:%p to queue:%p with proc_notify eventfd:%d",
+                  task, queue, task->proc_notify->event_fd);
 
     return ngx_rpc_notify_push_task(task->proc_notify , &task->node);
 

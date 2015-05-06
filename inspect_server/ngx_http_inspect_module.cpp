@@ -382,7 +382,7 @@ static ngx_int_t ngx_http_inspect_http_handler(ngx_http_request_t *r)
     ngx_log_error(NGX_LOG_WARN, r->connection->log, 0, "Method:%V, url:%V rc:%d!",
                   &r->method_name, &(r->uri), rc);
 
-    return NGX_OK;
+    return NGX_AGAIN;
 }
 
 

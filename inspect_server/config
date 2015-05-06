@@ -6,6 +6,7 @@ HTTP_MODULES="$HTTP_MODULES ngx_http_inspect_module "
 #file name with lowwer case
 NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
     $ngx_addon_dir/inspect.pb.cc \
+    $ngx_addon_dir/inspect_impl.cpp \
     $ngx_addon_dir/ngx_http_inspect_module.cpp "
 
 PROTO_INC="$ngx_addon_dir/../thirdparty/protobuf/include"
