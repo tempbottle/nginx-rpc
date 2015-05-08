@@ -6,7 +6,12 @@ BUILD:=$(PWD)/build
 
 NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
 
+PROTO_INC="$ngx_addon_dir/../thirdparty/protobuf/include"
+PROTO_LIB="$ngx_addon_dir/../thirdparty/protobuf/lib"
 
+CORE_INCS="$CORE_INCS $ngx_addon_dir $ngx_addon_dir/../ $PROTO_INC"
+CORE_LIBS="$CORE_LIBS $PROTO_LIB/libprotobuf.a -static-libgcc -static-libstdc++ "
+CORE_LINK=" -lrt "
 
 install: thirdparty/tengine/tengine-master/Makefile
 	rm -f release/logs/*

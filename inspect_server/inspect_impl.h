@@ -38,32 +38,7 @@ private:
 };
 
 
-class ApplicationClient {
-public:
-    void interface(RpcChannel *channel,const ::ngxrpc::inspect::Request* request,
-                   ::ngxrpc::inspect::Response* response,
-                   RpcCallHandler done )
-    {
-
-        channel->forward_request("/ngxrpc/inspect/Application/interface",request, response, done);
-    }
-
-
-    void requeststatus(RpcChannel *channel,
-                       const ::ngxrpc::inspect::Request* request,
-                       ::ngxrpc::inspect::Response* response,
-                       RpcCallHandler done)
-    {
-        channel->forward_request("/ngxrpc/inspect/Application/interface",request, response, done);
-    }
-public:
-};
-
-}}
-
-
-
-
+}} // for namespace ngxrpc { namespace inspect {
 
 
 #endif // INSPECT_SERVER_IMPL_H

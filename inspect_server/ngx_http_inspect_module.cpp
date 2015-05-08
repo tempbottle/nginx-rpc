@@ -1,6 +1,6 @@
 // C
 extern "C" {
-#include "ngx_http_rpc.h"
+    #include "ngx_http_rpc.h"
 }
 
 // for rpc server header
@@ -43,10 +43,8 @@ typedef struct
 
 // method closure
 static void ngxrpc_inspect_application_interface(ngx_rpc_task_t *_this, void *p1);
-
-
-
 static void ngxrpc_inspect_application_requeststatus(ngx_rpc_task_t *_this, void *p1);
+
 
 #define inspect_application_method_num  (sizeof(ngx_conf_set_inspect_application_methods)\
     /sizeof(ngx_conf_set_inspect_application_methods[0]))
@@ -178,6 +176,7 @@ static void* ngx_http_inspect_create_loc_conf(ngx_conf_t *cf)
 
     conf->methods = hash_init.hash;
     ngx_array_destroy(eles);
+
     for(unsigned int i = 0; i< inspect_application_method_num; ++i)
     {
         ngx_log_error(NGX_LOG_INFO, conf->log, 0, "ngx_http_inspect_create_loc_conf add:%V",
