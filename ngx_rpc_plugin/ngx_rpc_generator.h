@@ -6,6 +6,12 @@
 
 //namespace google::protobuf::compiler;
 
+#include "ngx_rpc_server_template.h"
+#include "ngx_rpc_module_template.h"
+#include <vector>
+
+
+
 class NginxRpcGenerator : public ::google::protobuf::compiler::CodeGenerator {
 public:
 

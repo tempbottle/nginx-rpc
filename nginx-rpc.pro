@@ -943,7 +943,15 @@ OTHER_FILES += \
     ngx_rpc_module/config \
     inspect_server/config \
     Makefile \
-    README.md
+    README.md \
+    inspect_server/inspect.proto
 
 SOURCES += \
     ngx_rpc_module/ngx_rpc_unix_socket.h
+
+SOURCES += \
+    ngx_rpc_plugin/ngx_rpc_module_template.h \
+    ngx_rpc_plugin/ngx_rpc_server_template.h
+
+SOURCES += \
+    ngx_rpc_plugin/ngx_rpc_defines.h

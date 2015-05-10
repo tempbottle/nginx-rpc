@@ -17,6 +17,7 @@ ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log)
         return NULL;
 
     memset(task, 0, sizeof(ngx_rpc_task_t));
+
     task->log = log;
     task->pool = pool;
 

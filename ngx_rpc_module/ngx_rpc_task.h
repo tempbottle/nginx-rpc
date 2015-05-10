@@ -55,6 +55,7 @@ struct ngx_rpc_task_s {
 
     // for rpc request req & res
     ngx_chain_t req_bufs;
+    ngx_int_t  req_length;
     ngx_chain_t res_bufs;
     ngx_int_t  res_length;
     // mertics

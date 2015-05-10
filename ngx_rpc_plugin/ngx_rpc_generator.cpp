@@ -11,6 +11,9 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 
+
+
+
 inline bool StripSuffix(std::string *filename, const std::string &suffix) {
   if (filename->length() >= suffix.length()) {
     size_t suffix_pos = filename->length() - suffix.length();

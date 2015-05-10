@@ -15,6 +15,16 @@ class ApplicationServer
 {
 public:
 
+    ApplicationServer(const std::string& conf_file)
+    {
+
+    }
+
+    ~ApplicationServer()
+    {
+
+    }
+
 
      void interface(RpcChannel *channel,
                     const ::ngxrpc::inspect::Request* request,

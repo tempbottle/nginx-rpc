@@ -14,29 +14,43 @@
 #include "ngx_rpc_process.h"
 
 #define  CACAHE_LINESIZE 64
-// sysconf(_SC_LEVEL1_DCACHE_LINESIZE)
+//sysconf(_SC_LEVEL1_DCACHE_LINESIZE)
 
 /// for rpc_task
 #include "ngx_rpc_task.h"
 
-
+#define NGX_HTTP_RPC_METHOD_MAX 256
+typedef struct {
+   ngx_str_t name;
+   void * _impl; // server instance
+   void (*handler)(ngx_rpc_task_t *_this, void *p1);
+   ngx_log_t *log;
+} method_conf_t;
 
  // for rpc_conf and module
 typedef struct
 {
     ngx_rpc_queue_t  *proc_queue;
     ngx_rpc_notify_t *notify;
-    ngx_log_t* log;
-
+    ngx_array_t* method_array;
+    ngx_hash_t * method_hash;
 } ngx_http_rpc_conf_t;
-
-extern ngx_module_t ngx_http_rpc_module;
 
 
 typedef struct {
-   ngx_str_t name;
-   void (*handler)(ngx_rpc_task_t *_this, void *p1);
-} method_conf_t;
+    ngx_http_rpc_conf_t *rpc_conf;
+    method_conf_t *method;
+
+    ngx_http_request_t *r;
+    ngx_rpc_task_t * task;
+    ngx_slab_pool_t *pool;
+} ngx_http_rpc_ctx_t;
+
+void ngx_http_rpc_ctx_destroy(void *p);
+
+
+
+extern ngx_module_t ngx_http_rpc_module;
 
 
 //

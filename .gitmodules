@@ -1,0 +1,3 @@
+[submodule "thirdparty/luajit2"]
+	path = thirdparty/luajit2
+	url = https://github.com/openresty/luajit2.git

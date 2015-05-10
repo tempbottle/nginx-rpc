@@ -1,5 +1,3 @@
-
-
 #include <google/protobuf/compiler/plugin.h>
 #include "ngx_rpc_generator.h"
 
