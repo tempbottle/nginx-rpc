@@ -1,21 +1,12 @@
 /// defines
-
-
-
-
-
-
 static const char * NGX_RPC_SERVER_HEADER_START[] = {
     "#ifndef __${PROTO_NAME_UPPER}_SERVER_IMPL_H_",
     "#define __${PROTO_NAME_UPPER}_SERVER_IMPL_H_"
 };
 
 static const char * NGX_RPC_SERVER_HEADER_END[] = {
-    "#endif"
+    "#endif // for __${PROTO_NAME_UPPER}_SERVER_IMPL_H_"
 };
-
-
-
 
 
 static const char * NGX_RPC_SERVER_INCLUDE[]= {
@@ -29,12 +20,12 @@ static const char * NGX_RPC_SERVER_INCLUDE[]= {
 
 static const char* NGX_RPC_SERVER_NAMESPACE_START[] =
 {
-    "namespace ${PROTO_PACKAGE} {"
+    "namespace ${PROTO_NAMESPACE} {"
 };
 
 static const char* NGX_RPC_SERVER_NAMESPACE_END[] =
 {
-    "} // for namespace ${PROTO_PACKAGE}"
+    "} // for namespace ${PROTO_NAMESPACE}"
 };
 
 
@@ -50,7 +41,7 @@ static const char* NGX_RPC_SERVER_CLASS_START[] = {
 };
 
 static const char* NGX_RPC_SERVER_CLASS_END[] = {
-    "}"
+    "} // for class ${PROTO_SERVER_NAME}Server"
 };
 
 

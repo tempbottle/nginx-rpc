@@ -6,14 +6,11 @@ BUILD:=$(PWD)/build
 
 NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
 
-PROTO_INC="$ngx_addon_dir/../thirdparty/protobuf/include"
-PROTO_LIB="$ngx_addon_dir/../thirdparty/protobuf/lib"
+PROTO_INC="$(PWD)/thirdparty/protobuf/include"
+PROTO_LIB="$(PWD)/thirdparty/protobuf/lib"
 
-CORE_INCS="$CORE_INCS $ngx_addon_dir $ngx_addon_dir/../ $PROTO_INC"
-CORE_LIBS="$CORE_LIBS $PROTO_LIB/libprotobuf.a -static-libgcc -static-libstdc++ "
-CORE_LINK=" -lrt "
 
-install: thirdparty/tengine/tengine-master/Makefile
+install: thirdparty/tengine/tengine-master/Makefile protoc-gen-ngx_rpc
 	rm -f release/logs/*
 	make -j$(NPROCS) -C thirdparty/tengine/tengine-master
 	make -j$(NPROCS) -C thirdparty/tengine/tengine-master install
@@ -41,16 +38,16 @@ thirdparty/tengine/tengine-master/Makefile: thirdparty/tengine/tengine-master/co
         --add-module=$(PWD)/ngx_rpc_module
 
 
-plugin: ngx_rpc_plugin/ngx_rpc_plugin.o  ngx_rpc_plugin/ngx_rpc_generator.o
-	g++ -o ngx_rpc_plugin/plugin ngx_rpc_plugin/ngx_rpc_generator.o ngx_rpc_plugin/ngx_rpc_plugin.o \
-		-Lthirdparty/protobuf/4.9/lib  -lprotoc -lprotobuf -lpthread -lrt
+protoc-gen-ngx_rpc: ngx_rpc_plugin/ngx_rpc_plugin.o  ngx_rpc_plugin/ngx_rpc_generator.o
+	g++ -o ngx_rpc_plugin/protoc-gen-ngx_rpc ngx_rpc_plugin/ngx_rpc_generator.o ngx_rpc_plugin/ngx_rpc_plugin.o \
+		-L$(PROTO_LIB)  -lprotoc -lprotobuf -lpthread -lrt
 
 
 ngx_rpc_plugin/ngx_rpc_generator.o : ngx_rpc_plugin/ngx_rpc_generator.cpp 
-	g++ -c -std=c++11 -o ngx_rpc_plugin/ngx_rpc_generator.o -Ithirdparty/protobuf/4.9/include ngx_rpc_plugin/ngx_rpc_generator.cpp
+	g++ -c -std=c++11 -o ngx_rpc_plugin/ngx_rpc_generator.o -I$(PROTO_INC) ngx_rpc_plugin/ngx_rpc_generator.cpp
 
 ngx_rpc_plugin/ngx_rpc_plugin.o : ngx_rpc_plugin/ngx_rpc_plugin.cpp 
-	g++ -c -o ngx_rpc_plugin/ngx_rpc_plugin.o -Ithirdparty/protobuf/4.9/include ngx_rpc_plugin/ngx_rpc_plugin.cpp
+	g++ -c -o ngx_rpc_plugin/ngx_rpc_plugin.o -I$(PROTO_INC) ngx_rpc_plugin/ngx_rpc_plugin.cpp
 
 #        --add-module=$(PWD)/test \
 #        --add-module=$(PWD)/rpc_proc

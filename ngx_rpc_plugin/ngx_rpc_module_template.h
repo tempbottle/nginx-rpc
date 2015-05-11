@@ -5,7 +5,7 @@ static const char * NGX_RPC_MODULE_INLUCDE[] = {
     "}",
     " #include \"${PROTO_NAME}_impl.h\"",
     "#include \"ngx_rpc_channel\"",
-    "using namespace ${PROTO_PACKAGE};"
+    "using namespace ${PROTO_NAMESPACE};"
 };
 
 
@@ -130,17 +130,17 @@ static const char * NGX_RPC_CREATE_LOC_END[] = {
 
 static const char * NGX_RPC_METHOD_PROCESS[] = {
 
-    "  static void ngxrpc_${PROTO_NAME}_${PROTO_SERVER_NAME_LOWER}_${PROTO_SERVER_METHOD_NAME}(ngx_rpc_task_t* _this, void* p1)
-    "  {
-    "      ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)p1;
+    "  static void ngxrpc_${PROTO_NAME}_${PROTO_SERVER_NAME_LOWER}_${PROTO_SERVER_METHOD_NAME}(ngx_rpc_task_t* _this, void* p1)",
+    "  {",
+    "      ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)p1;",
 
-    "      RpcChannel *cntl = new RpcChannel(rpc_ctx->r);
+    "      RpcChannel *cntl = new RpcChannel(rpc_ctx->r);",
 
-    "      cntl->task = _this;
-    "      cntl->req  = ${PROTO_SERVER_METHOD_REQUEST_NAME}();
-    "      cntl->res  = ${PROTO_SERVER_METHOD_RESPONSE_NAME}();
+    "      cntl->task = _this;",
+    "      cntl->req  = ${PROTO_SERVER_METHOD_REQUEST_NAME}();",
+    "      cntl->res  = ${PROTO_SERVER_METHOD_RESPONSE_NAME}();",
 
-    "     cntl->done =  std::bind(&RpcChannel::finish_request,
+    "     cntl->done =  std::bind(&RpcChannel::finish_request,",
     "                               std::placeholders::_1,",
     "                               std::placeholders::_2,",
     "                             std::placeholders::_3,",

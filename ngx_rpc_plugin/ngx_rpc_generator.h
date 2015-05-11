@@ -6,8 +6,7 @@
 
 //namespace google::protobuf::compiler;
 
-#include "ngx_rpc_server_template.h"
-#include "ngx_rpc_module_template.h"
+
 #include <vector>
 
 
@@ -27,7 +26,6 @@ private:
 
     void Insert(google::protobuf::compiler::GeneratorContext *context,
                 const std::string &filename,
-                const std::string &insertion_point,
                 const std::string &code) const;
 };
 
