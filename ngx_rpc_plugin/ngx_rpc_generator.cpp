@@ -30,6 +30,12 @@ inline bool StripSuffix(std::string *filename, const std::string &suffix) {
 }
 
 inline std::string StripProto(std::string filename) {
+
+    int pos = filename.rfind("/");
+    if( pos != std::string::npos)
+    {
+        filename = filename.substr(pos + 1);
+    }
     if (!StripSuffix(&filename, ".protodevel")) {
         StripSuffix(&filename, ".proto");
     }
@@ -66,8 +72,7 @@ std::string Replace(const std::string & input, const std::string& search,
 
 void Format(google::protobuf::io::Printer& p,
             std::map<std::string, std::string> &vars,
-            const char** start, int startnum,
-            const char** end = NULL, int endnum = 0 )
+            const char** start, int startnum, int lt = 0)
 {
 
     for(int i = 0; i < startnum; ++i )
@@ -76,14 +81,13 @@ void Format(google::protobuf::io::Printer& p,
         p.Print(vars, "\n");
     }
 
-    for(int i = 0; i < endnum; ++i)
+    for(int i = 0; i < lt; ++i)
     {
-        p.Print(vars, end[i]);
         p.Print(vars, "\n");
     }
 }
 
-
+#define P_MARGIN 3
 
 
 
@@ -99,20 +103,20 @@ std::string GetServerImplHeader(const google::protobuf::FileDescriptor *file) {
     vars[PROTO_NAME_UPPER] = Upper(vars[PROTO_NAME]);
     vars[PROTO_PACKAGE] = file->package();
 
-    vars[PROTO_NAMESPACE] = Replace(file->package(), ".", "::");
+    vars[PROTO_NAMESPACE] = Replace(file->package(), ".", " {\nnamespace ");
     vars[PROTO_NAMEPATH]  = Replace(file->package(), ".", "/");
 
     //define
     Format(p, vars, NGX_RPC_SERVER_HEADER_START,
-           sizeof(NGX_RPC_SERVER_HEADER_START)/sizeof(NGX_RPC_SERVER_HEADER_START[0]));
+           sizeof(NGX_RPC_SERVER_HEADER_START)/sizeof(NGX_RPC_SERVER_HEADER_START[0]), P_MARGIN);
 
     // includes
     Format(p, vars, NGX_RPC_SERVER_INCLUDE,
-           sizeof(NGX_RPC_SERVER_INCLUDE)/sizeof(NGX_RPC_SERVER_INCLUDE[0]));
+           sizeof(NGX_RPC_SERVER_INCLUDE)/sizeof(NGX_RPC_SERVER_INCLUDE[0]), P_MARGIN);
 
     //name space
     Format(p, vars, NGX_RPC_SERVER_NAMESPACE_START,
-           sizeof(NGX_RPC_SERVER_NAMESPACE_START)/sizeof(NGX_RPC_SERVER_NAMESPACE_START[0]));
+           sizeof(NGX_RPC_SERVER_NAMESPACE_START)/sizeof(NGX_RPC_SERVER_NAMESPACE_START[0]), P_MARGIN);
 
 
     for(int i = 0; i < file->service_count(); ++ i )
@@ -124,7 +128,7 @@ std::string GetServerImplHeader(const google::protobuf::FileDescriptor *file) {
 
         //class
         Format(p, vars, NGX_RPC_SERVER_CLASS_START,
-               sizeof(NGX_RPC_SERVER_CLASS_START)/sizeof(NGX_RPC_SERVER_CLASS_START[0]));
+               sizeof(NGX_RPC_SERVER_CLASS_START)/sizeof(NGX_RPC_SERVER_CLASS_START[0]), P_MARGIN);
 
         for(int i = 0 ; i < srvdesc->method_count(); ++i )
         {
@@ -137,22 +141,23 @@ std::string GetServerImplHeader(const google::protobuf::FileDescriptor *file) {
 
             // method
             Format(p , vars, NGX_RPC_SERVER_METHOD,
-                   sizeof(NGX_RPC_SERVER_METHOD)/sizeof(NGX_RPC_SERVER_METHOD[0]));
+                   sizeof(NGX_RPC_SERVER_METHOD)/sizeof(NGX_RPC_SERVER_METHOD[0]), P_MARGIN);
 
         }
 
         //end
         Format(p, vars, NGX_RPC_SERVER_CLASS_END,
-               sizeof(NGX_RPC_SERVER_CLASS_END)/sizeof(NGX_RPC_SERVER_CLASS_END[0]));
+               sizeof(NGX_RPC_SERVER_CLASS_END)/sizeof(NGX_RPC_SERVER_CLASS_END[0]), P_MARGIN);
 
     }
 
+   vars[PROTO_NAMESPACE] = Replace(file->package(), ".", " \n} //for ");
     Format(p, vars, NGX_RPC_SERVER_NAMESPACE_END,
-           sizeof(NGX_RPC_SERVER_NAMESPACE_END)/sizeof(NGX_RPC_SERVER_NAMESPACE_END[0]));
+           sizeof(NGX_RPC_SERVER_NAMESPACE_END)/sizeof(NGX_RPC_SERVER_NAMESPACE_END[0]), P_MARGIN);
 
 
     Format(p, vars, NGX_RPC_SERVER_HEADER_END,
-           sizeof(NGX_RPC_SERVER_HEADER_END)/sizeof(NGX_RPC_SERVER_HEADER_END[0]));
+           sizeof(NGX_RPC_SERVER_HEADER_END)/sizeof(NGX_RPC_SERVER_HEADER_END[0]), P_MARGIN);
 
     return output;
 }
@@ -177,12 +182,13 @@ std::string GetNgxModuleHeader(const google::protobuf::FileDescriptor *file) {
 
     // includes
     Format(p, vars, NGX_RPC_MODULE_INLUCDE,
-           sizeof(NGX_RPC_MODULE_INLUCDE)/sizeof(NGX_RPC_MODULE_INLUCDE[0]));
+           sizeof(NGX_RPC_MODULE_INLUCDE)/sizeof(NGX_RPC_MODULE_INLUCDE[0]), P_MARGIN);
 
 
     //conf space
     Format(p, vars, NGX_PRC_MODULE_CONF_START,
            sizeof(NGX_PRC_MODULE_CONF_START)/sizeof(NGX_PRC_MODULE_CONF_START[0]));
+
     for(int i = 0; i < file->service_count(); ++ i )
     {
         const ::google::protobuf::ServiceDescriptor * srvdesc = file->service(i);
@@ -192,10 +198,10 @@ std::string GetNgxModuleHeader(const google::protobuf::FileDescriptor *file) {
 
         //class
         Format(p, vars, NGX_RPC_MODULE_CONF_SERVERS,
-               sizeof(NGX_RPC_MODULE_CONF_SERVERS)/sizeof(NGX_RPC_MODULE_CONF_SERVERS[0]));
+               sizeof(NGX_RPC_MODULE_CONF_SERVERS)/sizeof(NGX_RPC_MODULE_CONF_SERVERS[0]), 1);
     }
     Format(p, vars, NGX_PRC_MODULE_CONF_END,
-           sizeof(NGX_PRC_MODULE_CONF_END)/sizeof(NGX_PRC_MODULE_CONF_END[0]));
+           sizeof(NGX_PRC_MODULE_CONF_END)/sizeof(NGX_PRC_MODULE_CONF_END[0]), P_MARGIN);
 
 
     //set
@@ -206,7 +212,7 @@ std::string GetNgxModuleHeader(const google::protobuf::FileDescriptor *file) {
         vars[PROTO_SERVER_NAME_LOWER] = Lower(srvdesc->name());
 
         Format(p, vars, NGX_RPC_SERVER_SET_CONF,
-               sizeof(NGX_RPC_SERVER_SET_CONF)/sizeof(NGX_RPC_SERVER_SET_CONF[0]));
+               sizeof(NGX_RPC_SERVER_SET_CONF)/sizeof(NGX_RPC_SERVER_SET_CONF[0]), 1);
     }
 
 
@@ -222,24 +228,24 @@ std::string GetNgxModuleHeader(const google::protobuf::FileDescriptor *file) {
                sizeof(NGX_RPC_COMMANDS_ITEMS)/sizeof(NGX_RPC_COMMANDS_ITEMS[0]));
     }
     Format(p, vars, NGX_RPC_COMMANDS_END,
-           sizeof(NGX_RPC_COMMANDS_END)/sizeof(NGX_RPC_COMMANDS_END[0]));
+           sizeof(NGX_RPC_COMMANDS_END)/sizeof(NGX_RPC_COMMANDS_END[0]), P_MARGIN);
 
 
     // http_module
     Format(p, vars, NGX_RPC_HTTP_MODULE_DECALRES,
-           sizeof(NGX_RPC_HTTP_MODULE_DECALRES)/sizeof(NGX_RPC_HTTP_MODULE_DECALRES[0]));
+           sizeof(NGX_RPC_HTTP_MODULE_DECALRES)/sizeof(NGX_RPC_HTTP_MODULE_DECALRES[0]), 1);
 
     Format(p, vars, NGX_RPC_HTTP_MODULE_DEFINE,
-           sizeof(NGX_RPC_HTTP_MODULE_DEFINE)/sizeof(NGX_RPC_HTTP_MODULE_DEFINE[0]));
+           sizeof(NGX_RPC_HTTP_MODULE_DEFINE)/sizeof(NGX_RPC_HTTP_MODULE_DEFINE[0]), P_MARGIN);
 
 
     // ngx_module
 
     Format(p, vars, NGX_RPC_MOUDLE_DECARLES,
-           sizeof(NGX_RPC_MOUDLE_DECARLES)/sizeof(NGX_RPC_MOUDLE_DECARLES[0]));
+           sizeof(NGX_RPC_MOUDLE_DECARLES)/sizeof(NGX_RPC_MOUDLE_DECARLES[0]), 1);
 
     Format(p, vars, NGX_RPC_MOUDLE_DEFINE,
-           sizeof(NGX_RPC_MOUDLE_DEFINE)/sizeof(NGX_RPC_MOUDLE_DEFINE[0]));
+           sizeof(NGX_RPC_MOUDLE_DEFINE)/sizeof(NGX_RPC_MOUDLE_DEFINE[0]), P_MARGIN);
 
 
     //creat loc conf
@@ -255,7 +261,7 @@ std::string GetNgxModuleHeader(const google::protobuf::FileDescriptor *file) {
                sizeof(NGX_RPC_CREATE_LOC_ITEMS)/sizeof(NGX_RPC_CREATE_LOC_ITEMS[0]));
     }
     Format(p, vars, NGX_RPC_CREATE_LOC_END,
-           sizeof(NGX_RPC_CREATE_LOC_END)/sizeof(NGX_RPC_CREATE_LOC_END[0]));
+           sizeof(NGX_RPC_CREATE_LOC_END)/sizeof(NGX_RPC_CREATE_LOC_END[0]), P_MARGIN);
 
 
     for(int i = 0; i < file->service_count(); ++ i )
@@ -275,12 +281,28 @@ std::string GetNgxModuleHeader(const google::protobuf::FileDescriptor *file) {
 
             // method
             Format(p , vars, NGX_RPC_METHOD_PROCESS,
-                   sizeof(NGX_RPC_METHOD_PROCESS)/sizeof(NGX_RPC_METHOD_PROCESS[0]));
+                   sizeof(NGX_RPC_METHOD_PROCESS)/sizeof(NGX_RPC_METHOD_PROCESS[0]), P_MARGIN);
         }
     }
 
     return output;
 }
+
+
+std::string GetNgxConfig(const google::protobuf::FileDescriptor *file) {
+    std::string output;
+    google::protobuf::io::StringOutputStream output_stream(&output);
+    google::protobuf::io::Printer p(&output_stream, '%');
+    std::map<std::string, std::string> vars;
+
+    vars[PROTO_NAME] = Lower(StripProto(file->name()));
+
+    Format(p, vars, NGX_RPC_CONFIG,
+           sizeof(NGX_RPC_CONFIG)/sizeof(NGX_RPC_CONFIG[0]), P_MARGIN);
+
+    return output;
+}
+
 
 
 bool NginxRpcGenerator::Generate(const google::protobuf::FileDescriptor *file,
@@ -289,20 +311,22 @@ bool NginxRpcGenerator::Generate(const google::protobuf::FileDescriptor *file,
                                  std::string *error) const
 {
 
-    if (file->options().cc_generic_services()) {
+    if (!file->options().cc_generic_services()) {
         *error =
                 "Nginx rpc proto compiler plugin does not work with generic "
                 "services. To generate Nginx rpc APIs, please set \""
-                "cc_generic_service = false.";
+                "cc_generic_service = true.";
         return false;
     }
 
-
     std::string file_name = StripProto(file->name());
 
-    Insert(context, file_name+"_impl.h", GetServerImplHeader(file));
+    Insert(context, "ngx_rpc_"+file_name+"_module/"+file_name+"_impl.h", GetServerImplHeader(file));
 
-    Insert(context, "ngx_http_"+file_name+ "module.cpp", GetNgxModuleHeader(file));
+    Insert(context, "ngx_rpc_"+file_name+"_module/ngx_http_"+file_name+ "_module.cpp", GetNgxModuleHeader(file));
+
+    Insert(context, "ngx_rpc_"+file_name+"_module/config", GetNgxConfig(file));
+
     return true;
 }
 

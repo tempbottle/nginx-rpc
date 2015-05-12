@@ -19,6 +19,7 @@ install: thirdparty/tengine/tengine-master/Makefile protoc-gen-ngx_rpc
 clean:
 	make -C thirdparty/tengine/tengine-master clean
 	rm -fr build/*
+	rm -f ngx_rpc_plugin/*.o ngx_rpc_plugin/protoc-gen-ngx_rpc
 
 rebuild:
 	rm -fr jemalloc
@@ -38,15 +39,25 @@ thirdparty/tengine/tengine-master/Makefile: thirdparty/tengine/tengine-master/co
         --add-module=$(PWD)/ngx_rpc_module
 
 
+
+plugin_header:= ngx_rpc_plugin/ngx_rpc_defines.h \
+                ngx_rpc_plugin/ngx_rpc_generator.h \
+                ngx_rpc_plugin/ngx_rpc_module_template.h \
+                ngx_rpc_plugin/ngx_rpc_server_template.h
+
+
+
+
 protoc-gen-ngx_rpc: ngx_rpc_plugin/ngx_rpc_plugin.o  ngx_rpc_plugin/ngx_rpc_generator.o
-	g++ -o ngx_rpc_plugin/protoc-gen-ngx_rpc ngx_rpc_plugin/ngx_rpc_generator.o ngx_rpc_plugin/ngx_rpc_plugin.o \
+	g++ -o $(INSTALL)/sbin/protoc-gen-ngx_rpc ngx_rpc_plugin/ngx_rpc_generator.o ngx_rpc_plugin/ngx_rpc_plugin.o \
 		-L$(PROTO_LIB)  -lprotoc -lprotobuf -lpthread -lrt
+#	./thirdparty/protobuf/bin/protoc  ./inspect_server/inspect.proto  --ngx_rpc_out=. --plugin=./ngx_rpc_plugin/protoc-gen-ngx_rpc
 
 
-ngx_rpc_plugin/ngx_rpc_generator.o : ngx_rpc_plugin/ngx_rpc_generator.cpp 
+ngx_rpc_plugin/ngx_rpc_generator.o : ngx_rpc_plugin/ngx_rpc_generator.cpp $(plugin_header)
 	g++ -c -std=c++11 -o ngx_rpc_plugin/ngx_rpc_generator.o -I$(PROTO_INC) ngx_rpc_plugin/ngx_rpc_generator.cpp
 
-ngx_rpc_plugin/ngx_rpc_plugin.o : ngx_rpc_plugin/ngx_rpc_plugin.cpp 
+ngx_rpc_plugin/ngx_rpc_plugin.o : ngx_rpc_plugin/ngx_rpc_plugin.cpp $(plugin_header)
 	g++ -c -o ngx_rpc_plugin/ngx_rpc_plugin.o -I$(PROTO_INC) ngx_rpc_plugin/ngx_rpc_plugin.cpp
 
 #        --add-module=$(PWD)/test \
