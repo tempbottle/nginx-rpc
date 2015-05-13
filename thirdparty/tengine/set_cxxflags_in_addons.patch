@@ -1,0 +1,66 @@
+diff --git a/auto/cc/gcc b/auto/cc/gcc
+index c27d857..92669ac 100644
+--- a/auto/cc/gcc
++++ b/auto/cc/gcc
+@@ -179,3 +179,5 @@ CFLAGS="$CFLAGS -g"
+ if [ ".$CPP" = "." ]; then
+     CPP="$CC -E"
+ fi
++
++CXXFLAGS="${CXXFLAGS}"
+diff --git a/auto/make b/auto/make
+index 5397bf8..23815e6 100644
+--- a/auto/make
++++ b/auto/make
+@@ -52,7 +52,7 @@ CC =	$CC
+ CFLAGS = $CFLAGS
+ CPP =	$CPP
+ LINK =	$LINK
+-
++CXXFLAGS = $CXXFLAGS
+ END
+ 
+ 
+@@ -392,7 +392,7 @@ fi
+ 
+ if test -n "$NGX_ADDON_SRCS"; then
+ 
+-    ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) $ngx_use_pch \$(ALL_INCS)"
++    #ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) $ngx_use_pch \$(ALL_INCS)"
+ 
+     for ngx_src in $NGX_ADDON_SRCS
+     do
+@@ -408,6 +408,13 @@ if test -n "$NGX_ADDON_SRCS"; then
+                   -e "s#^\(.*\.\)S\\$#$ngx_objs_dir\1$ngx_objext#g"`
+ 
+         ngx_src=`echo $ngx_src | sed -e "s/\//$ngx_regex_dirsep/g"`
++        
++        ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) $ngx_use_pch \$(ALL_INCS)"
++        
++        #if the ngx_src is c++ file, add CXXFLAGS to ngx_cc.
++        if [ "${ngx_src##*.}" = "cc" ] || [ "${ngx_src##*.}" = "cpp" ];then
++            ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) \$(CXXFLAGS) $ngx_use_pch \$(ALL_INCS)"
++        fi
+ 
+         cat << END                                            >> $NGX_MAKEFILE
+ 
+diff --git a/auto/options b/auto/options
+index 6bb6b72..fb844d7 100644
+--- a/auto/options
++++ b/auto/options
+@@ -664,6 +664,7 @@ use the \"--without-http_limit_conn_module\" option instead"
+         --with-cc=*)                     CC="$value"                ;;
+         --with-cpp=*)                    CPP="$value"               ;;
+         --with-cc-opt=*)                 NGX_CC_OPT="$value"        ;;
++        --with-cxx-opt=*)                CXXFLAGS="$value"          ;;
+         --with-ld-opt=*)                 NGX_LD_OPT="$value"        ;;
+         --with-cpu-opt=*)                CPU="$value"               ;;
+         --with-debug)                    NGX_DEBUG=YES              ;;
+@@ -921,6 +922,7 @@ cat << END
+   --with-cc=PATH                     set C compiler pathname
+   --with-cpp=PATH                    set C preprocessor pathname
+   --with-cc-opt=OPTIONS              set additional C compiler options
++  --with-cxx-opt=OPTIONS             set additional CXX compiler options
+   --with-ld-opt=OPTIONS              set additional linker options
+   --with-cpu-opt=CPU                 build for the specified CPU, valid values:
+                                      pentium, pentiumpro, pentium3, pentium4,
