@@ -12,13 +12,17 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
     $ngx_addon_dir/ngx_rpc_process.c \
     $ngx_addon_dir/ngx_rpc_task.c \
     $ngx_addon_dir/ngx_rpc_notify.c \
-    $ngx_addon_dir/ngx_rpc_queue.c "
+    $ngx_addon_dir/ngx_rpc_queue.c"
+
+NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
+    $ngx_addon_dir/ngx_http_rpc.h \
+    $ngx_addon_dir/ngx_log_cpp.h \
+    $ngx_addon_dir/ngx_rpc_buffer.h \
+    $ngx_addon_dir/ngx_rpc_channel.h \
+    $ngx_addon_dir/ngx_rpc_notify.h \
+    $ngx_addon_dir/ngx_rpc_process.h \
+    $ngx_addon_dir/ngx_rpc_queue.h \
+    $ngx_addon_dir/ngx_rpc_task.h"
 
 
-
-PROTO_INC="$ngx_addon_dir/../thirdparty/protobuf/include"
-PROTO_LIB="$ngx_addon_dir/../thirdparty/protobuf/lib"
-
-CORE_INCS="$CORE_INCS $ngx_addon_dir $ngx_addon_dir/../ $PROTO_INC"
-CORE_LIBS="$CORE_LIBS $PROTO_LIB/libprotobuf.a -static-libgcc -static-libstdc++ "
-CORE_LINK=" -lrt "
+CORE_INCS="$CORE_INCS $ngx_addon_dir"

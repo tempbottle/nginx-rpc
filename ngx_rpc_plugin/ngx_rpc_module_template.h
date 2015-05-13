@@ -6,7 +6,7 @@ static const char * NGX_RPC_MODULE_INLUCDE[] = {
     "}",
     "",
     "#include \"$PROTO_NAME$_impl.h\"",
-    "#include \"ngx_rpc_channel\"",
+    "#include \"ngx_rpc_channel.h\"",
     "",
     "using namespace $PROTO_NAMESPACE$;"
 };
@@ -22,7 +22,7 @@ static const char * NGX_RPC_MODULE_CONF_SERVERS[] = {
     "    ngx_log_t *$PROTO_SERVER_NAME_LOWER$_log;",
     "    ngx_str_t  $PROTO_SERVER_NAME_LOWER$_conf_file;",
     "    ngx_str_t  $PROTO_SERVER_NAME_LOWER$_log_file;",
-    "    $PROTO_SERVER_NAME$Server *$PROTO_SERVER_NAME_LOWER$_impl;"
+    "    $PROTO_SERVER_NAME$_server *$PROTO_SERVER_NAME_LOWER$_impl;"
 };
 
 static const char * NGX_PRC_MODULE_CONF_END[] = {
@@ -100,7 +100,7 @@ static const char * NGX_RPC_MOUDLE_DEFINE[] = {
     "    NULL,             /* init process */",
     "    NULL,             /* init thread */",
     "    NULL,             /* exit thread */",
-    "    ngx_inspect_process_exit, /* exit process */",
+    "    ngx_$PROTO_NAME$_process_exit, /* exit process */",
     "    NULL,                     /* exit master */",
     "    NGX_MODULE_V1_PADDING",
     "};",
@@ -110,7 +110,7 @@ static const char * NGX_RPC_MOUDLE_DEFINE[] = {
 
 static const char * NGX_RPC_CREATE_LOC_START[] = {
 
-    "static void* ngx_http_$PROTO_NAME$_create_loc_conf(ngx_conf_t *cf),",
+    "static void* ngx_http_$PROTO_NAME$_create_loc_conf(ngx_conf_t *cf)",
     "{",
     "    ngx_http_$PROTO_NAME$_conf_t *conf = (ngx_http_$PROTO_NAME$_conf_t *)ngx_pcalloc(cf->pool,",
     "                                              sizeof(ngx_http_$PROTO_NAME$_conf_t));",
@@ -119,8 +119,8 @@ static const char * NGX_RPC_CREATE_LOC_START[] = {
 
 static const char * NGX_RPC_CREATE_LOC_ITEMS[] = {
     "    conf->$PROTO_SERVER_NAME_LOWER$_conf_file = ngx_string(\"\");",
-    "    conf->$PROTO_SERVER_NAME_LOWER$_log_file = ngx_string(\"\");",
-    ""
+    "    conf->$PROTO_SERVER_NAME_LOWER$_log_file  = ngx_string(\"\");",
+    "    conf->$PROTO_SERVER_NAME_LOWER$_impl      = NULL;"
 };
 
 static const char * NGX_RPC_CREATE_LOC_END[] = {
@@ -162,14 +162,118 @@ static const char * NGX_RPC_METHOD_PROCESS[] = {
     "        return;",
     "    }",
     "",
-    "    $PROTO_SERVER_NAME$Server * impl = ($PROTO_SERVER_NAME$Server *) rpc_ctx->method->_impl;",
+    "    $PROTO_SERVER_NAME$_server * impl = ($PROTO_SERVER_NAME$_server *) rpc_ctx->method->_impl;",
     "",
     "    //call the implement method",
-    "    impl->$PROTO_SERVER_METHOD_NAME$(cntl, ($PROTO_SERVER_METHOD_REQUEST_NAME$)cntl->req, ($PROTO_SERVER_METHOD_RESPONSE_NAME$*)cntl->res, cntl->done);",
+    "    impl->$PROTO_SERVER_METHOD_NAME$(cntl, ($PROTO_SERVER_METHOD_REQUEST_NAME$*)cntl->req, ($PROTO_SERVER_METHOD_RESPONSE_NAME$*)cntl->res, cntl->done);",
     "",
     "}"
 
 };
+
+
+//for set
+
+static const char * NGX_RPC_SET_SERVER_METHOD_START[] = {
+
+    "static char* ngx_conf_set_$PROTO_NAME$_$PROTO_SERVER_NAME_LOWER$_hanlder(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)",
+    "{",
+    "",
+    "    ngx_http_rpc_conf_t *rpc_conf = (ngx_http_rpc_conf_t *)",
+    "            ngx_http_conf_get_module_main_conf(cf, ngx_http_rpc_module);",
+    "",
+    "    if(rpc_conf == NULL)",
+    "    {",
+    "        ngx_conf_log_error(NGX_LOG_WARN, cf, 0, \"ngx_http_rpc_module not init\");",
+    "        return (char*)\"ngx_http_rpc_module not init\";",
+    "    }",
+    "",
+    "    ngx_http_$PROTO_NAME$_conf_t *$PROTO_NAME$_conf = (ngx_http_$PROTO_NAME$_conf_t*) conf;",
+    "    ngx_str_t* value = (ngx_str_t*)cf->args->elts;",
+    "",
+    "    if(cf->args->nelts > 1)",
+    "    {",
+    "         $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_conf_file = (value[1]);",
+    "    }",
+    "",
+    "    const std::string app_conf((const char *)$PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_conf_file.data);",
+    "    $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_impl = new $PROTO_SERVER_NAME$_server(app_conf);",
+    "",
+    "",
+    "    $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_log = ngx_cycle->log;",
+    "",
+    "    if( cf->args->nelts > 2)",
+    "    {",
+    "       $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_log_file = (value[2]);",
+    "       $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_log  = (ngx_log_t*)ngx_palloc(cf->pool, sizeof(ngx_log_t));",
+    "       $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_log->file = ngx_conf_open_file(cf->cycle, &value[1]);",
+    "       $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_log->log_level = NGX_DEBUG;",
+    "    }",
+    ""
+};
+
+static const char * NGX_RPC_SET_SERVER_METHOD_ITEM[] = {
+    "    ",
+    "    ",
+    "    {",
+    "        method_conf_t *method = (method_conf_t *)ngx_array_push(rpc_conf->method_array);",
+    "        method->name    = ngx_string(\"/$PROTO_NAMEPATH$/$PROTO_SERVER_NAME$/$PROTO_SERVER_METHOD_NAME$\");",
+    "        method->_impl   = $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_impl;",
+    "        method->handler = ngxrpc_$PROTO_NAME$_$PROTO_SERVER_NAME_LOWER$_$PROTO_SERVER_METHOD_NAME$;",
+    "        method->log     = $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_log;",
+    "    }",
+    "    ",
+    "    {",
+    "        method_conf_t *method = (method_conf_t *)ngx_array_push(rpc_conf->method_array);",
+    "        method->name    = ngx_string(\"/$PROTO_NAMEPATH$.$PROTO_SERVER_NAME$.$PROTO_SERVER_METHOD_NAME$\");",
+    "        method->_impl   = $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_impl;",
+    "        method->handler = ngxrpc_$PROTO_NAME$_$PROTO_SERVER_NAME_LOWER$_$PROTO_SERVER_METHOD_NAME$;",
+    "        method->log     = $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_log;",
+    "    }",
+};
+
+static const char * NGX_RPC_SET_SERVER_METHOD_END[] = {
+    "",
+    "",
+    "     ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,",
+    "              \"ngx_conf_set_$PROTO_NAME$_$PROTO_SERVER_NAME_LOWER$_hanlder with $PROTO_SERVER_NAME_LOWER$_impl:%p, conf file:%V log_file:%V\",",
+    "              $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_impl,",
+    "              &$PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_conf_file,",
+    "              &$PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_log_file);",
+    "",
+    "",
+    "     return NGX_OK;",
+    "}"
+};
+
+
+
+
+//for exit
+static const char * NGX_RPC_EXIT_START [] = {
+
+    "static void ngx_$PROTO_NAME$_process_exit(ngx_cycle_t* cycle)",
+    "{",
+    "    ngx_http_conf_ctx_t * ctx = (ngx_http_conf_ctx_t *) cycle->conf_ctx[ngx_http_module.index];",
+    "    ngx_http_$PROTO_NAME$_conf_t *c = (ngx_http_$PROTO_NAME$_conf_t *) ctx ->loc_conf[ngx_http_module.ctx_index];",
+    "",
+    "    ngx_log_error(NGX_LOG_INFO, cycle->log, 0, \"ngx_$PROTO_NAME$_process_exit done\");",
+    ""
+};
+
+static const char * NGX_RPC_EXIT_ITEM[] = {
+    "    // release the instance ",
+    "    delete c->$PROTO_SERVER_NAME_LOWER$_impl;",
+    ""
+};
+
+static const char * NGX_RPC_EXIT_END[] = {
+    "",
+    "}"
+};
+
+
+
 
 
 

@@ -31,7 +31,7 @@ inline bool StripSuffix(std::string *filename, const std::string &suffix) {
 
 inline std::string StripProto(std::string filename) {
 
-    int pos = filename.rfind("/");
+    size_t pos = filename.rfind("/");
     if( pos != std::string::npos)
     {
         filename = filename.substr(pos + 1);
@@ -258,12 +258,13 @@ std::string GetNgxModuleHeader(const google::protobuf::FileDescriptor *file) {
         vars[PROTO_SERVER_NAME_LOWER] = Lower(srvdesc->name());
 
         Format(p, vars, NGX_RPC_CREATE_LOC_ITEMS,
-               sizeof(NGX_RPC_CREATE_LOC_ITEMS)/sizeof(NGX_RPC_CREATE_LOC_ITEMS[0]));
+               sizeof(NGX_RPC_CREATE_LOC_ITEMS)/sizeof(NGX_RPC_CREATE_LOC_ITEMS[0]), 2);
     }
     Format(p, vars, NGX_RPC_CREATE_LOC_END,
            sizeof(NGX_RPC_CREATE_LOC_END)/sizeof(NGX_RPC_CREATE_LOC_END[0]), P_MARGIN);
 
 
+    //method
     for(int i = 0; i < file->service_count(); ++ i )
     {
         const ::google::protobuf::ServiceDescriptor * srvdesc = file->service(i);
@@ -284,6 +285,51 @@ std::string GetNgxModuleHeader(const google::protobuf::FileDescriptor *file) {
                    sizeof(NGX_RPC_METHOD_PROCESS)/sizeof(NGX_RPC_METHOD_PROCESS[0]), P_MARGIN);
         }
     }
+
+    //set command
+    for(int i = 0; i < file->service_count(); ++ i )
+    {
+        const ::google::protobuf::ServiceDescriptor * srvdesc = file->service(i);
+        vars[PROTO_SERVER_NAME] = srvdesc->name();
+        vars[PROTO_SERVER_NAME_LOWER] = Lower(srvdesc->name());
+
+        Format(p, vars, NGX_RPC_SET_SERVER_METHOD_START,
+               sizeof(NGX_RPC_SET_SERVER_METHOD_START)/sizeof(NGX_RPC_SET_SERVER_METHOD_START[0]));
+
+        for(int i = 0 ; i < srvdesc->method_count(); ++i )
+        {
+            const ::google::protobuf::MethodDescriptor * method = srvdesc->method(i);
+
+            vars[PROTO_SERVER_METHOD_NAME] = method->name();
+
+            vars[PROTO_SERVER_METHOD_REQUEST_NAME] = method->input_type()->name();
+            vars[PROTO_SERVER_METHOD_RESPONSE_NAME] = method->output_type()->name();
+
+            // method
+            Format(p , vars, NGX_RPC_SET_SERVER_METHOD_ITEM,
+                   sizeof(NGX_RPC_SET_SERVER_METHOD_ITEM)/sizeof(NGX_RPC_SET_SERVER_METHOD_ITEM[0]));
+        }
+
+
+        Format(p, vars, NGX_RPC_SET_SERVER_METHOD_END,
+               sizeof(NGX_RPC_SET_SERVER_METHOD_END)/sizeof(NGX_RPC_SET_SERVER_METHOD_END[0]), P_MARGIN);
+    }
+
+    // ext
+    Format(p, vars, NGX_RPC_EXIT_START,
+           sizeof(NGX_RPC_EXIT_START)/sizeof(NGX_RPC_EXIT_START[0]));
+    for(int i = 0; i < file->service_count(); ++ i )
+    {
+        const ::google::protobuf::ServiceDescriptor * srvdesc = file->service(i);
+        vars[PROTO_SERVER_NAME] = srvdesc->name();
+        vars[PROTO_SERVER_NAME_LOWER] = Lower(srvdesc->name());
+
+        Format(p, vars, NGX_RPC_EXIT_ITEM,
+               sizeof(NGX_RPC_EXIT_ITEM)/sizeof(NGX_RPC_EXIT_ITEM[0]));
+    }
+
+    Format(p, vars, NGX_RPC_EXIT_END,
+           sizeof(NGX_RPC_EXIT_END)/sizeof(NGX_RPC_EXIT_END[0]));
 
     return output;
 }

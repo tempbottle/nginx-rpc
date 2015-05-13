@@ -32,23 +32,23 @@ static const char* NGX_RPC_SERVER_NAMESPACE_END[] =
 
 
 static const char* NGX_RPC_SERVER_CLASS_START[] = {
-    "class $PROTO_SERVER_NAME$Server ",
+    "class $PROTO_SERVER_NAME$_server ",
     "{",
     "public:",
-    "    $PROTO_SERVER_NAME$Server(const std::string& conf_file)",
+    "    $PROTO_SERVER_NAME$_server(const std::string& conf_file)",
     "    {",
     "    }",
 };
 
 static const char* NGX_RPC_SERVER_CLASS_END[] = {
-    "} /// for class $PROTO_SERVER_NAME$Server"
+    "}; /// for class $PROTO_SERVER_NAME$_server"
 };
 
 
 static const char* NGX_RPC_SERVER_METHOD[]={
 
     "     void $PROTO_SERVER_METHOD_NAME$(RpcChannel *channel,const $PROTO_SERVER_METHOD_REQUEST_NAME$* request,",
-    "                                     const $PROTO_SERVER_METHOD_RESPONSE_NAME$* response, RpcCallHandler done)",
+    "                                     $PROTO_SERVER_METHOD_RESPONSE_NAME$* response, RpcCallHandler done)",
     "    {",
     "         DEBUG(\"$PROTO_SERVER_METHOD_NAME$ was called!\")",
     "",
