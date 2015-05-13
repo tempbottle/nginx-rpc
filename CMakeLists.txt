@@ -33,8 +33,7 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/release")
 
 
 include(thirdparty/CMakeLists.txt)
-## proto modules
-add_subdirectory(ngx_rpc_plugin)
+
 
 
 set(NGX_MODULE ${CMAKE_SOURCE_DIR}/ngx_rpc_module)
@@ -43,3 +42,5 @@ set(NGX_MODULE ${NGX_MODULE} ${CMAKE_SOURCE_DIR}/ngx_rpc_inspect_module)
 include(ExternalProject)
 include(tengine.cmake)
 
+## proto modules
+add_subdirectory(ngx_rpc_plugin)

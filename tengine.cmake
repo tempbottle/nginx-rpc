@@ -63,9 +63,21 @@ SET(CONFIGURE_COMMAND CC=gcc ./configure --prefix=${TENGINX_INSTALL}
 
 #add module
 foreach(module ${NGX_MODULE})
+    include_directories("${module}")
+endforeach()
 
+#tenginx header for qtcreator
+include_directories("${TENGINX_SRC}/src/core")
+include_directories("${TENGINX_SRC}/src/event")
+include_directories("${TENGINX_SRC}/src/http")
+include_directories("${TENGINX_SRC}/src/mail")
+include_directories("${TENGINX_SRC}/src/misc")
+include_directories("${TENGINX_SRC}/src/os")
+include_directories("${TENGINX_SRC}/src/proc")
+
+
+foreach(module ${NGX_MODULE})
     SET(CONFIGURE_COMMAND ${CONFIGURE_COMMAND} --add-module=${module})
-
     #add to qtcreator
     file(GLOB_RECURSE SRC_PP FOLLOW_SYMLINKS "${module}/*.[ch]pp")
     file(GLOB_RECURSE SRC_CC FOLLOW_SYMLINKS "${module}/*.cc")
@@ -96,6 +108,8 @@ externalproject_add(tengine_build
 
 add_dependencies(tengine_build proto_build luajit2_build)
 
+
+include_directories(${module})
 #add to qtcreator
 file(GLOB_RECURSE SRC_C FOLLOW_SYMLINKS "${TENGINX_SRC}/*")
 add_custom_target(tengine_src SOURCES ${SRC_PP} ${SRC_C} ${HEADERS} )
