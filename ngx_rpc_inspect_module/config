@@ -1,0 +1,21 @@
+#Add this module when configure nginx with --add-module="ngx_rpc_inspect_module"
+#this is the module name
+ngx_addon_name="ngx_http_inspect_module"
+
+HTTP_MODULES="$HTTP_MODULES ngx_http_inspect_module "
+
+#sources files with lowwer case
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
+    $ngx_addon_dir/inspect.pb.cc \
+    $ngx_addon_dir/ngx_http_inspect_module.cpp "
+
+#this header files
+NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
+    $ngx_addon_dir/inspect_impl.h \
+    $ngx_addon_dir/inspect.pb.h "
+
+CORE_INCS="$CORE_INCS $ngx_addon_dir"
+
+
+
+
