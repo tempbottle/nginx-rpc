@@ -21,10 +21,11 @@
 
 #define NGX_HTTP_RPC_METHOD_MAX 256
 typedef struct {
+   ngx_log_t *log;
    ngx_str_t name;
    void * _impl; // server instance
-   void (*handler)(ngx_rpc_task_t *_this, void *p1);
-   ngx_log_t *log;
+   void (*handler)(ngx_rpc_task_t *_this, void *p1);// wrapper of rpc server impl
+   int exec_in_nginx:1;
 } method_conf_t;
 
  // for rpc_conf and module
@@ -42,7 +43,7 @@ typedef struct {
     method_conf_t *method;
 
     ngx_http_request_t *r;
-    ngx_rpc_task_t * task;
+    ngx_rpc_task_t  *task;
     ngx_slab_pool_t *pool;
 } ngx_http_rpc_ctx_t;
 
@@ -53,7 +54,7 @@ void ngx_http_rpc_ctx_destroy(void *p);
 extern ngx_module_t ngx_http_rpc_module;
 
 
-//
+// for sub request
 void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx);
 
 void ngx_http_rpc_request_foward(ngx_rpc_task_t* _this, void *ctx);

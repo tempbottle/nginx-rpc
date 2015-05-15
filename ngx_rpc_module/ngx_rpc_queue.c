@@ -96,6 +96,26 @@ int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, ngx_rpc_task_t* task)
 
 }
 
+ngx_rpc_notify_t * ngx_rpc_queue_get_idle(ngx_rpc_queue_t *queue)
+{
+
+    ngx_queue_t* proc_notify_node = NULL;
+
+    ngx_shmtx_lock(&queue->idles_lock);
+
+    if(!ngx_queue_empty(&queue->idles))
+    {
+        proc_notify_node = queue->idles.next;
+
+        queue->idles.next = proc_notify_node->next;
+        proc_notify_node->next->prev = &queue->idles;
+    }
+
+    ngx_shmtx_unlock(&queue->idles_lock);
+
+    return proc_notify_node;
+}
+
 
 ngx_rpc_notify_t *ngx_rpc_queue_add_current_consumer(ngx_rpc_queue_t *queue, void *ctx)
 {

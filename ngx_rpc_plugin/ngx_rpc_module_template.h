@@ -221,6 +221,7 @@ static const char * NGX_RPC_SET_SERVER_METHOD_ITEM[] = {
     "        method->_impl   = $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_impl;",
     "        method->handler = ngxrpc_$PROTO_NAME$_$PROTO_SERVER_NAME_LOWER$_$PROTO_SERVER_METHOD_NAME$;",
     "        method->log     = $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_log;",
+    "        method->exec_in_nginx = 1;",
     "    }",
     "    ",
     "    {",
@@ -229,6 +230,7 @@ static const char * NGX_RPC_SET_SERVER_METHOD_ITEM[] = {
     "        method->_impl   = $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_impl;",
     "        method->handler = ngxrpc_$PROTO_NAME$_$PROTO_SERVER_NAME_LOWER$_$PROTO_SERVER_METHOD_NAME$;",
     "        method->log     = $PROTO_NAME$_conf->$PROTO_SERVER_NAME_LOWER$_log;",
+    "        method->exec_in_nginx = 1;",
     "    }",
 };
 

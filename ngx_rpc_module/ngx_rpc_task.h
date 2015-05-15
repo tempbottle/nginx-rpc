@@ -6,6 +6,9 @@
 
 #define MAX_PATH_NAME 128
 
+
+
+
 // http key value
 typedef struct {
     ngx_queue_t next;
@@ -23,33 +26,32 @@ typedef struct {
 
 #define task_closure_exec(t) t->closure.handler(t, t->closure.p1)
 
-///
-typedef struct {
-    int line;
-    const char* fun;
-    const char* file;
-    ngx_uint_t create_ms;
-    ngx_uint_t done_ms;
-} task_metric_t ;
 
 
 
 ///
 struct ngx_rpc_task_s {
 
-    ngx_queue_t node;
+    // need for rpc
+    ngx_queue_t       node;
     ngx_rpc_notify_t *proc_notify;
     ngx_rpc_notify_t *done_notify;
-    volatile ngx_uint_t refcount;
+    ngx_slab_pool_t  *share_pool;
+    ngx_log_t        *log;
 
+    // need for
+    ngx_pool_t       *ngx_pool;
+
+    int              exec_in_nginx;
+
+    ngx_uint_t time_out_ms;
 
     // closure
     task_closure_t closure;
     task_closure_t finish;
-    ngx_slab_pool_t *pool;
-    ngx_log_t * log;
 
-    // for sub request
+
+    // for sub request or upstream
     u_char path[MAX_PATH_NAME];
     ngx_queue_t params;
 
@@ -58,13 +60,9 @@ struct ngx_rpc_task_s {
     ngx_int_t  req_length;
     ngx_chain_t res_bufs;
     ngx_int_t  res_length;
+
     // mertics
     int response_states;
-    ngx_uint_t time_out_ms;
-
-    task_metric_t metric;
-
-
 };
 
 
@@ -106,12 +104,17 @@ struct ngx_rpc_task_s {
 /// \param t
 ///
 
-ngx_rpc_task_t *ngx_http_rpc_task_create(ngx_slab_pool_t *pool, ngx_log_t *log);
+ngx_rpc_task_t *ngx_http_create_rpc_task(ngx_slab_pool_t *share_pool,
+                                         ngx_pool_t *ngx_pool,
+                                         ngx_log_t *log, int exec_in_nginx);
+
+
+ngx_rpc_task_t* ngx_http_rpc_task_reset(ngx_rpc_task_t *task, ngx_slab_pool_t *pool, ngx_pool_t* ngx_pool, ngx_log_t *log);
 
 void ngx_http_rpc_task_destory(void *t);
 
-void ngx_http_rpc_task_set_bufs(ngx_slab_pool_t *pool, ngx_chain_t *req_bufs, ngx_chain_t* src_bufs);
 
 
+void ngx_http_rpc_task_set_bufs(ngx_rpc_task_t *task, ngx_chain_t *req_bufs, ngx_chain_t* src_bufs);
 
 #endif

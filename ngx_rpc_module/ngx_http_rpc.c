@@ -5,6 +5,10 @@ void ngx_http_rpc_ctx_destroy(void *p)
     ngx_http_rpc_ctx_t * ctx_ptr = p;
     ngx_slab_free(ctx_ptr->pool, p);
 
+    if(ctx_ptr->task != NULL){
+        ngx_http_rpc_task_destory(ctx_ptr->task);
+    }
+
     ngx_log_error(NGX_LOG_DEBUG, ctx_ptr->method->log, 0,
                   "ngx_http_rpc_ctx_destroy ngx_http_rpc_ctx_t:%p", p);
 }
@@ -17,6 +21,12 @@ static ngx_command_t  ngx_http_rpc_module_commands[] = {
 
 static ngx_int_t ngx_http_rpc_http_handler(ngx_http_request_t *r);
 
+///
+/// \brief ngx_http_rpc_postconfiguration
+///        init all the method map and push the content handler
+/// \param cf
+/// \return
+///
 static ngx_int_t ngx_http_rpc_postconfiguration(ngx_conf_t* cf){
 
     ngx_http_rpc_conf_t *rpc_conf = (ngx_http_rpc_conf_t *)
@@ -38,7 +48,8 @@ static ngx_int_t ngx_http_rpc_postconfiguration(ngx_conf_t* cf){
         key->key_hash = ngx_hash_key_lc(key->key.data, key->key.len);
         key->value = method;
 
-        ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0 ," ngx_http_rpc_add method %V:%p",&method->name, method);
+        ngx_conf_log_error(NGX_LOG_INFO, cf, 0 ,
+                           " ngx_http_rpc_add method %V:%p",&method->name, method);
     }
 
 
@@ -88,16 +99,16 @@ static void* ngx_http_rpc_create_main_conf(ngx_conf_t *cf)
         return NULL;
     }
 
-    conf->proc_queue = NULL;
-    conf->notify     = NULL;
-
+    conf->proc_queue  = NULL;
+    conf->notify      = NULL;
+    conf->method_hash = NULL;
     // init the method
     conf->method_array = ngx_array_create(cf->pool, NGX_HTTP_RPC_METHOD_MAX,
                                           sizeof(method_conf_t));
 
-    ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "ngx_http_rpc_create_srv_conf :%p", conf);
-    return conf;
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "ngx_http_rpc_create_srv_conf :%p", conf);
 
+    return conf;
 }
 
 /* Modules */
@@ -137,7 +148,6 @@ ngx_module_t  ngx_http_rpc_module = {
 
 
 
-///// Done task
 ///
 #define ngx_http_cycle_get_module_srv_conf(cycle, module)            \
     (cycle->conf_ctx[ngx_http_module.index] ?                        \
@@ -156,31 +166,37 @@ static ngx_int_t ngx_http_rpc_init_process(ngx_cycle_t *cycle)
     ngx_proc_rpc_conf_t *proc_conf =  ngx_proc_get_conf(cycle->conf_ctx, ngx_proc_rpc_module);
 
     if(rpc_conf == NULL || proc_conf == NULL)
+    {
+        ngx_log_error(NGX_LOG_INFO, cycle->log, 0,
+                      "Neither ngx_http_rpc_module nor ngx_proc_rpc_module was add to tengine");
         return NGX_OK;
+    }
 
     rpc_conf->proc_queue = proc_conf->queue;
 
     rpc_conf->notify = ngx_rpc_queue_add_current_producer(rpc_conf->proc_queue, rpc_conf);
 
-    rpc_conf->notify->read_hanlder = ngx_http_rpc_process_notify_task;
+    rpc_conf->notify->read_hanlder  = ngx_http_rpc_process_notify_task;
     rpc_conf->notify->write_hanlder = ngx_http_rpc_process_notify_task;
 
-    ngx_log_error(NGX_LOG_WARN,cycle->log, 0,
-                  "ngx_http_rpc_init_process rpc_conf:%p queue:%p notify :%p eventfd:%d",
-                  rpc_conf, rpc_conf->proc_queue, rpc_conf->notify, rpc_conf->notify->event_fd);
+    ngx_log_error(NGX_LOG_WARN, cycle->log, 0,
+                  "ngx_http_rpc_init_process rpc_conf:%p queue:%p notify eventfd:%d",
+                  rpc_conf, rpc_conf->proc_queue, rpc_conf->notify->event_fd);
 
     return NGX_OK;
 }
 
-
+// remove frome
 static void ngx_http_rpc_exit_process(ngx_cycle_t *cycle)
 {
     ngx_http_rpc_conf_t *conf =
             ngx_http_cycle_get_module_main_conf(cycle, ngx_http_rpc_module);
 
-    ngx_rpc_notify_unregister(conf->notify);
+    ngx_log_error(NGX_LOG_WARN, cycle->log, 0,
+                  "ngx_http_rpc_exit_process conf:%p unregister notify eventfd:%d",
+                  conf, conf->notify->event_fd);
 
-    ngx_log_error(NGX_LOG_WARN, cycle->log, 0, "ngx_http_rpc_exit_process conf:%p", conf);
+    ngx_rpc_notify_unregister(conf->notify);
 }
 
 
@@ -191,41 +207,62 @@ static void ngx_http_rpc_post_async_handler(ngx_http_request_t *r)
     if(r->request_body == NULL
             || r->request_body->bufs == NULL)
     {
-        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "Request body is NULL");
-        ngx_http_finalize_request(r, NGX_HTTP_BAD_REQUEST);
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "url:%V Request body is NULL", &r->uri);
+
+        ngx_http_finalize_request(r, NGX_HTTP_LENGTH_REQUIRED);
         return;
     }
 
     ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
             ngx_http_get_module_ctx(r, ngx_http_rpc_module);
 
-
     if(rpc_ctx->task == NULL)
     {
-        rpc_ctx->task = ngx_http_rpc_task_create(rpc_ctx->pool, rpc_ctx->method->log);
+        rpc_ctx->task = ngx_http_rpc_task_create(rpc_ctx->pool,
+                                                 r->connection->pool,
+                                                 rpc_ctx->method->log,
+                                                 rpc_ctx->method->exec_in_nginx);
+    }else{
+        rpc_ctx->task = ngx_http_rpc_task_reset(rpc_ctx->task,
+                                                rpc_ctx->pool,
+                                                r->connection->pool,
+                                                rpc_ctx->method->log,
+                                                rpc_ctx->method->exec_in_nginx);
     }
 
-
+    // this process eventfd
     rpc_ctx->task->done_notify = rpc_ctx->rpc_conf->notify;
+    rpc_ctx->task->proc_notify = rpc_ctx->rpc_conf->notify;
 
-    // 2 copy the request bufs
+    // copy the request bufs
     ngx_http_rpc_task_set_bufs(rpc_ctx->task->pool, &rpc_ctx->task->req_bufs, r->request_body->bufs);
     rpc_ctx->task->req_length = r->headers_in.content_length_n;
 
-    // processor
+    // processor which run in the proc process.
     rpc_ctx->task->closure.handler = rpc_ctx->method->handler;
     rpc_ctx->task->closure.p1  =  rpc_ctx;
 
-    // push queue
-    int ret = ngx_rpc_queue_push_and_notify(rpc_ctx->rpc_conf->proc_queue, rpc_ctx->task);
-
-    if(ret != NGX_OK)
+    //
+    if(rpc_ctx->task->exec_in_nginx)
     {
-        rpc_ctx->task->response_states = NGX_HTTP_INTERNAL_SERVER_ERROR;
-        rpc_ctx->task->res_length = 0;
+        task->closure.handler(task, task->closure.p1);
 
-        ngx_http_rpc_request_finish(rpc_ctx->task, r);
+    }else{
+
+        rpc_ctx->task->proc_notify =
+                ngx_rpc_queue_get_idle(rpc_ctx->rpc_conf->proc_queue);
+
+        if(rpc_ctx->task->proc_notify == NULL)
+        {
+            rpc_ctx->task->response_states = NGX_HTTP_GATEWAY_TIME_OUT;
+            rpc_ctx->task->res_length = 0;
+            ngx_http_rpc_request_finish(rpc_ctx->task, r);
+        }
+
+        ngx_rpc_notify_push_task(rpc_ctx->task->proc_notify, rpc_ctx->task);
     }
+
 }
 
 
@@ -263,8 +300,9 @@ static ngx_int_t ngx_http_rpc_http_handler(ngx_http_request_t *r)
     if(mth == NULL)
     {
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                      "Method:%s,url:%V Not Found",
-                      r->request_start, &(r->uri));
+                      "url:%V  not found ngx rpc content handler",
+                      &(r->uri));
+
         return NGX_DECLINED;
     }
 
@@ -307,9 +345,10 @@ static ngx_int_t ngx_http_rpc_http_handler(ngx_http_request_t *r)
     ngx_int_t rc = ngx_http_read_client_request_body(r,
                                                ngx_http_rpc_post_async_handler);
 
-    ngx_log_error(NGX_LOG_WARN, r->connection->log, 0, "Method:%V, url:%V rc:%d!",
-                  &r->method_name, &(r->uri), rc);
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "url:%V forward to ngx rpc method:%V rc:%d",
+                  &r->method_name, &mth->name, rc);
 
+    // need ngx_http_rpc_post_async_handler to process the request
     return NGX_AGAIN;
 }
 
@@ -355,20 +394,15 @@ void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx)
 
     int rc = ngx_http_send_header(r);
 
-    if(task->res_length > 0)
+    if(rc == NGX_OK && task->res_length > 0)
     {
         //find last
         rc = ngx_http_output_filter(r, &task->res_bufs);
     }
 
-    // clear the task
-    ngx_pool_cleanup_t *p1 = ngx_pool_cleanup_add(r->connection->pool, 0);
-    p1->data = task;
-    p1->handler = ngx_http_rpc_task_destory;
-
     ngx_log_error(NGX_LOG_INFO, task->log, 0,
                   "ngx_http_inspect_application_finish task:%p status:%d size:%d, rc:%d",
-                  task, task->response_states, task->res_length,rc );
+                  task, task->response_states, task->res_length, rc );
 
     ngx_http_finalize_request(r, rc);
 }
@@ -381,6 +415,7 @@ ngx_http_rpc_subrequest_done_handler(ngx_http_request_t *r, void *data, ngx_int_
 {
     ngx_rpc_task_t* task = (ngx_rpc_task_t*)data;
 
+    // came from the parent
     if(rc == NGX_AGAIN)
     {
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
@@ -391,17 +426,21 @@ ngx_http_rpc_subrequest_done_handler(ngx_http_request_t *r, void *data, ngx_int_
     }
 
     // ngx_http_request_t *pr = r->parent;
-
     task->response_states = r->headers_out.status;
 
-    //
     if(task->response_states == NGX_HTTP_OK )
     {
         ngx_http_rpc_task_set_bufs(task->pool, &task->req_bufs,
                  r->upstream ? r->upstream->out_bufs : r->postponed->out);
     }
 
-    ngx_rpc_notify_push_task(task->proc_notify, &task->node);
+    if(task->exec_in_nginx)
+    {
+        task->closure.handler(task, task->closure.p1);
+    }else{
+        // send to proc process
+        ngx_rpc_notify_push_task(task->proc_notify, &task->node);
+    }
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                   "ngx_http_rpc_subrequest_done_handler task:%p status:%d nofity eventfd:%d",
@@ -467,6 +506,7 @@ void ngx_http_rpc_request_foward(ngx_rpc_task_t* _this, void *ctx)
     psr->data = task;
 
     r->request_body->bufs = &task->req_bufs;
+
     ngx_http_header_modify_content_length(r, task->res_length);
 
     ngx_str_t forward = { strlen((char*)task->path), task->path};
@@ -476,7 +516,7 @@ void ngx_http_rpc_request_foward(ngx_rpc_task_t* _this, void *ctx)
     ngx_int_t rc = ngx_http_subrequest(r, &forward, NULL, &sr, psr, NGX_HTTP_SUBREQUEST_IN_MEMORY);
 
     ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
-                  " start sub request %V task:%p content:%d rc:%d",
+                  " start sub request %V task:%p content length:%d rc:%d",
                   &forward, task, task->res_length, rc);
 
     ngx_http_run_posted_requests(r->connection);

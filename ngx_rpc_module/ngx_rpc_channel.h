@@ -34,15 +34,27 @@ public:
     {
     }
 
-    static void destructor(void *p);
 
     int setRequestHeader();
-
     int getRequestHeader();
 
     int setResponseHeader();
-
     int getResponseHeader();
+
+
+
+    void aync_call(const std::string& path,
+                     const ::google::protobuf::Message* req,
+                     ::google::protobuf::Message* res,
+                     RpcCallHandler done);
+
+    int sync_call(const std::string& path,
+                     const ::google::protobuf::Message* req,
+                     ::google::protobuf::Message* res);
+
+private:
+
+    void RpcChannel::call_done(ngx_rpc_task_t* task, void *ctx);
 
     void forward_request(const std::string& path,
                      const ::google::protobuf::Message* req,
@@ -50,8 +62,7 @@ public:
                      RpcCallHandler done);
 
 
-
-    static void foward_done(ngx_rpc_task_t* _this, void *ctx);
+    static void forward_done(ngx_rpc_task_t* _this, void *ctx);
     static void finish_request(RpcChannel *channel,
                                const ::google::protobuf::Message* req,
                                ::google::protobuf::Message* res,
@@ -64,9 +75,10 @@ public:
 
     ::google::protobuf::Message *req;
     ::google::protobuf::Message *res;
+    RpcCallHandler  done;
 
     RpcChannel* pre_cntl;
-    RpcCallHandler  done;
+
 };
 
 

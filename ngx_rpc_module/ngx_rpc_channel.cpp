@@ -1,5 +1,4 @@
 
-
 extern "C" {
 #include "ngx_http_rpc.h"
 }
@@ -7,31 +6,29 @@ extern "C" {
 
 #include "ngx_rpc_channel.h"
 
-/// Rpc channel
-///
-void RpcChannel::destructor(void *p)
+void RpcChannel::aync_call(const std::string& path,
+                 const ::google::protobuf::Message* req,
+                 ::google::protobuf::Message* res,
+                 RpcCallHandler done)
 {
-    RpcChannel *tp = (RpcChannel*)p;
-    delete tp->req;
-    delete tp->res;
-    delete tp;
+
+    // new task, new cntl
+
+    // forward to nginx proc
+
+}
+
+int RpcChannel::sync_call(const std::string& path,
+                 const ::google::protobuf::Message* req,
+                 ::google::protobuf::Message* res)
+{
+
 }
 
 
-
-void RpcChannel::foward_done(ngx_rpc_task_t* task, void *ctx)
+void RpcChannel::call_done(ngx_rpc_task_t* task, void *ctx)
 {
-    RpcChannel *new_channel = (RpcChannel *)ctx;
 
-    NgxChainBufferReader reader(task->req_bufs);
-
-    bool ret = new_channel->res->ParseFromZeroCopyStream(&reader);
-
-    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, " foward_done task:%p, status:%d parse:%d", task, task->response_states, ret);
-
-    new_channel->done(new_channel->pre_cntl, new_channel->req, new_channel->res, task->response_states);
-
-    delete new_channel;
 }
 
 void RpcChannel::forward_request(const std::string& path,
@@ -62,6 +59,8 @@ void RpcChannel::forward_request(const std::string& path,
 
     strncpy((char*)task->path, path.c_str(), path.size());
 
+
+
     if(task->done_notify != NULL)
          ngx_rpc_notify_push_task(task->done_notify, &task->node);
 
@@ -70,6 +69,24 @@ void RpcChannel::forward_request(const std::string& path,
                   ret, task->res_length, task->done_notify, task->path);
 
 }
+
+
+void RpcChannel::forward_done(ngx_rpc_task_t* task, void *ctx)
+{
+    RpcChannel *new_channel = (RpcChannel *)ctx;
+
+    NgxChainBufferReader reader(task->req_bufs);
+
+    bool ret = new_channel->res->ParseFromZeroCopyStream(&reader);
+
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, " foward_done task:%p, status:%d parse:%d", task, task->response_states, ret);
+
+    new_channel->done(new_channel->pre_cntl, new_channel->req, new_channel->res, task->response_states);
+
+    delete new_channel;
+}
+
+
 
 void RpcChannel::finish_request(RpcChannel *channel, const google::protobuf::Message *req, google::protobuf::Message *res, int result)
 {
@@ -80,19 +97,25 @@ void RpcChannel::finish_request(RpcChannel *channel, const google::protobuf::Mes
     bool ret = res->SerializeToZeroCopyStream(&writer);
     task->res_length = writer.totaly;
 
-    // push the done task
-    if(task->done_notify != NULL)
+    task->finish.handler = ngx_http_rpc_request_finish;
+    task->finish.p1 = channel->r;
+
+
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                  "SerializeToZeroCopyStream:%d size:%d,expect:%d notify eventfd:%d",
+                  ret, task->res_length, ex, task->done_notify->event_fd);
+
+
+    if(task->exec_in_nginx)
     {
-        ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
-                      "SerializeToZeroCopyStream:%d size:%d,expect:%d notify eventfd:%d",
-                      ret, task->res_length, ex, task->done_notify->event_fd);
-        // done
-        task->finish.handler = ngx_http_rpc_request_finish;
-        task->finish.p1 = channel->r;
-        ngx_rpc_notify_push_task(task->done_notify, &(task->node));
+        task->finish.handler(task, task->finish.p1);
+    }else{
+        if(task->done_notify != NULL)
+        {
+            ngx_rpc_notify_push_task(task->done_notify, &(task->node));
+        }
     }
 
-    // clean the channel
     delete channel;
 }
 

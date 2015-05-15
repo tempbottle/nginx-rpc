@@ -70,6 +70,7 @@ ngx_rpc_notify_t *ngx_rpc_queue_add_current_consumer(ngx_rpc_queue_t *queue, voi
 int ngx_rpc_queue_push_and_notify(ngx_rpc_queue_t *queue, ngx_rpc_task_t *task);
 
 
+ngx_rpc_notify_t * ngx_rpc_queue_get_idle(ngx_rpc_queue_t *queue);
 
 #endif
 
