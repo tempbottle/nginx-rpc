@@ -13,7 +13,7 @@ set(PKGVERSION_FULL "${VERSION_MAJOR}_${VERSION_MINOR}_${VERSION_PATCH}")
 
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -msse -msse2 -msse3 -msse4.1   -g3  -fPIC -Wall -Wextra -Wno-unused-variable -Wno-unused-local-typedefs -Wno-unused-parameter -rdynamic -fpermissive -std=c++11 ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb -msse -msse2 -msse3 -msse4.1 -g3  -fPIC -Wall -Wextra -Wno-unused-variable -Wno-unused-local-typedefs -Wno-unused-parameter -rdynamic -fpermissive -std=c++11 ")
 
 
 set(CMAKE_BUILD_TYPE debug)

@@ -15,47 +15,57 @@
 
 #openssl
 
-#luajit2
-SET(LUAJIT2 ${CMAKE_SOURCE_DIR}/thirdparty/luajit2)
 
-externalproject_add(luajit2_build
-    PREFIX ${LUAJIT2}
-    URL ${LUAJIT2}/luajit2-master.zip
-    URL_MD5 81b4529a55efb6a6c97c7c62e1004858
-    CONFIGURE_COMMAND echo start build luajit
-    BINARY_DIR ${LUAJIT2}
-    BUILD_COMMAND /bin/sh build.sh
-    INSTALL_COMMAND echo build luajit done
-)
+#luajit2
+#
+SET(LUAJIT2 ${CMAKE_SOURCE_DIR}/thirdparty/luajit2)
+IF(NOT EXISTS "${LUAJIT2}/lib")
+    externalproject_add(luajit2_build
+        PREFIX ${LUAJIT2}
+        URL ${LUAJIT2}/luajit2-master.zip
+        URL_MD5 81b4529a55efb6a6c97c7c62e1004858
+        CONFIGURE_COMMAND echo start build luajit
+        BINARY_DIR ${LUAJIT2}
+        BUILD_COMMAND /bin/sh build.sh
+        INSTALL_COMMAND echo build luajit done
+    )
+endif()
+
+file(GLOB_RECURSE SRC_C FOLLOW_SYMLINKS "${LUAJIT2}/include/*")
+add_custom_target(luajit2_src SOURCES ${SRC_C} )
 
 #protobuf
+#
 SET(PROTOBUF ${CMAKE_SOURCE_DIR}/thirdparty/protobuf)
+IF(NOT EXISTS "${PROTOBUF}/lib")
+    externalproject_add(proto_build
+        PREFIX ${PROTOBUF}
+        URL ${PROTOBUF}/protobuf-2.6.1.tar.gz
+        URL_MD5 f3916ce13b7fcb3072a1fa8cf02b2423
+        CONFIGURE_COMMAND echo start build protobuf
+        BINARY_DIR ${PROTOBUF}
+        BUILD_COMMAND /bin/sh build.sh
+        INSTALL_COMMAND echo build protobuf done
+    )
+endif()
+
+file(GLOB_RECURSE SRC_C FOLLOW_SYMLINKS "${PROTOBUF}/include/*")
+add_custom_target(luajit2_src SOURCES ${SRC_C})
 
 #tengine
 #git config --global http.proxy http://10.198.2.146:8080
 #https://codeload.github.com/alibaba/tengine/zip/master
 #GIT_REPOSITORY https://github.com/alibaba/tengine.git
-externalproject_add(proto_build
-    PREFIX ${PROTOBUF}
-    URL ${PROTOBUF}/protobuf-2.6.1.tar.gz
-    URL_MD5 f3916ce13b7fcb3072a1fa8cf02b2423
-    CONFIGURE_COMMAND echo start build protobuf
-    BINARY_DIR ${PROTOBUF}
-    BUILD_COMMAND /bin/sh build.sh
-    INSTALL_COMMAND echo build protobuf done
-)
-
-
 SET(TENGINX_PATH ${CMAKE_SOURCE_DIR}/thirdparty/tengine)
 SET(TENGINX_SRC ${CMAKE_SOURCE_DIR}/build/tengine-src)
 SET(TENGINX_INSTALL ${CMAKE_SOURCE_DIR}/install)
 
-SET(CONFIGURE_COMMAND CC=gcc ./configure --prefix=${TENGINX_INSTALL} 
---with-debug 
---with-backtrace_module 
+SET(CONFIGURE_COMMAND CC=gcc ./configure --prefix=${TENGINX_INSTALL}
+--with-debug
+--with-backtrace_module
 --with-link=g++
---with-cc-opt=-O0\ -g\ -ggdb\ -ggdb3\ -I.\ -I${PROTOBUF}/include 
---with-cxx-opt=-std=c++11 
+--with-cc-opt=-O0\ -g\ -ggdb\ -ggdb3\ -I.\ -I${PROTOBUF}/include
+--with-cxx-opt=-std=c++11
 --with-ld-opt=-L${PROTOBUF}/lib\ -lprotobuf\ -static-libgcc\ -static-libstdc++\ -L/usr/local/lib\ -lpcre
 --with-http_lua_module
 --with-luajit-inc=${LUAJIT2}/include/luajit-2.0
@@ -101,7 +111,7 @@ externalproject_add(tengine_build
 
     CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
     SOURCE_DIR ${TENGINX_SRC}
-    BUILD_COMMAND make -j4 install    
+    BUILD_COMMAND make -j4 install
     BUILD_IN_SOURCE 1
     INSTALL_DIR ${TENGINX_INSTALL}
 )
@@ -112,6 +122,5 @@ add_dependencies(tengine_build proto_build luajit2_build)
 include_directories(${module})
 #add to qtcreator
 file(GLOB_RECURSE SRC_C FOLLOW_SYMLINKS "${TENGINX_SRC}/*")
-add_custom_target(tengine_src SOURCES ${SRC_PP} ${SRC_C} ${HEADERS} )
-
+add_custom_target(tengine_src SOURCES ${SRC_C})
 
