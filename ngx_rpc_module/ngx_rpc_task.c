@@ -44,6 +44,8 @@ ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *share_pool,
     return task;
 }
 
+
+
 ngx_rpc_task_t* ngx_http_rpc_task_reset(ngx_rpc_task_t *task, ngx_slab_pool_t *share_pool, ngx_pool_t *ngx_pool, ngx_log_t *log){
 
     ngx_http_rpc_task_set_bufs(task, &task->req_bufs, NULL);

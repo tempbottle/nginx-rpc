@@ -1,1 +1,6 @@
-// use upstream to call rpc server
+#ifndef __NGX_RPC_CLIENT_H_
+#define __NGX_RPC_CLIENT_H_
+
+
+#elif
+

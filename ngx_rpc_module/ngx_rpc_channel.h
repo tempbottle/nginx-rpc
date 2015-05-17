@@ -43,26 +43,22 @@ public:
 
 
 
-    void aync_call(const std::string& path,
+    void upstream(const std::string& upstream_path,
                      const ::google::protobuf::Message* req,
                      ::google::protobuf::Message* res,
                      RpcCallHandler done);
 
-    int sync_call(const std::string& path,
+    void subrequest(const std::string& path,
                      const ::google::protobuf::Message* req,
-                     ::google::protobuf::Message* res);
+                     ::google::protobuf::Message* res,
+                     RpcCallHandler done);
+
 
 private:
 
-    void RpcChannel::call_done(ngx_rpc_task_t* task, void *ctx);
+    static void upstream_done(ngx_rpc_task_t* task, void *ctx);
+    static void subrequest_done(ngx_rpc_task_t* task, void *ctx);
 
-    void forward_request(const std::string& path,
-                     const ::google::protobuf::Message* req,
-                     ::google::protobuf::Message* res,
-                     RpcCallHandler done);
-
-
-    static void forward_done(ngx_rpc_task_t* _this, void *ctx);
     static void finish_request(RpcChannel *channel,
                                const ::google::protobuf::Message* req,
                                ::google::protobuf::Message* res,
@@ -76,6 +72,8 @@ public:
     ::google::protobuf::Message *req;
     ::google::protobuf::Message *res;
     RpcCallHandler  done;
+
+
 
     RpcChannel* pre_cntl;
 

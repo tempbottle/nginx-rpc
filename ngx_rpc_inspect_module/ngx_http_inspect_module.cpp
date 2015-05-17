@@ -175,7 +175,7 @@ static void ngxrpc_inspect_application_requeststatus(ngx_rpc_task_t* _this, void
 static char* ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
 
-    ngx_http_rpc_conf_t *rpc_conf = (ngx_http_rpc_conf_t *)
+    ngx_http_rpc_main_conf_t *rpc_conf = (ngx_http_rpc_main_conf_t *)
             ngx_http_conf_get_module_main_conf(cf, ngx_http_rpc_module);
 
     if(rpc_conf == NULL)

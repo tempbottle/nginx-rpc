@@ -19,6 +19,7 @@
 #luajit2
 #
 SET(LUAJIT2 ${CMAKE_SOURCE_DIR}/thirdparty/luajit2)
+
 IF(NOT EXISTS "${LUAJIT2}/lib")
     externalproject_add(luajit2_build
         PREFIX ${LUAJIT2}
@@ -29,6 +30,7 @@ IF(NOT EXISTS "${LUAJIT2}/lib")
         BUILD_COMMAND /bin/sh build.sh
         INSTALL_COMMAND echo build luajit done
     )
+    add_dependencies(tengine_build luajit2_build)
 endif()
 
 file(GLOB_RECURSE SRC_C FOLLOW_SYMLINKS "${LUAJIT2}/include/*")
@@ -47,10 +49,11 @@ IF(NOT EXISTS "${PROTOBUF}/lib")
         BUILD_COMMAND /bin/sh build.sh
         INSTALL_COMMAND echo build protobuf done
     )
+    add_dependencies(tengine_build proto_build)
 endif()
 
 file(GLOB_RECURSE SRC_C FOLLOW_SYMLINKS "${PROTOBUF}/include/*")
-add_custom_target(luajit2_src SOURCES ${SRC_C})
+add_custom_target(proto_src SOURCES ${SRC_C})
 
 #tengine
 #git config --global http.proxy http://10.198.2.146:8080
@@ -96,7 +99,7 @@ foreach(module ${NGX_MODULE})
     file(GLOB_RECURSE HEADERS FOLLOW_SYMLINKS "${module}/*.h")
 
     get_filename_component(MODULE_NAME ${module} NAME)
-    add_custom_target(${MODULE_NAME} SOURCES ${SRC_PP} ${SRC_CC} ${SRC_C} ${HEADERS} ${SRC_CONFIG})
+    add_custom_target(${MODULE_NAME}_src SOURCES ${SRC_PP} ${SRC_CC} ${SRC_C} ${HEADERS} ${SRC_CONFIG})
     #message("add add_custom_target:${MODULE_NAME} from with ${SRC_PP} ${SRC_CC} ${SRC_C} ${HEADERS}")
     #add_dependencies(tengine_build ${MODULE_NAME})
 endforeach()
@@ -115,9 +118,6 @@ externalproject_add(tengine_build
     BUILD_IN_SOURCE 1
     INSTALL_DIR ${TENGINX_INSTALL}
 )
-
-add_dependencies(tengine_build proto_build luajit2_build)
-
 
 include_directories(${module})
 #add to qtcreator
