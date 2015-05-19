@@ -7,7 +7,7 @@
 /// \param ctx
 /// \return
 ///
-ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *share_pool,
+ngx_rpc_task_t* ngx_http_create_rpc_task(ngx_slab_pool_t *share_pool,
                                          ngx_pool_t *ngx_pool,
                                          ngx_log_t *log, int exec_in_nginx)
 {
@@ -18,8 +18,7 @@ ngx_rpc_task_t* ngx_http_rpc_task_create(ngx_slab_pool_t *share_pool,
     {
         task = (ngx_rpc_task_t*)ngx_palloc(ngx_pool, sizeof(ngx_rpc_task_t));
     }else{
-        task = (ngx_rpc_task_t*)ngx_slab_alloc(pool,, sizeof(ngx_rpc_task_t));
-
+        task = (ngx_rpc_task_t*)ngx_slab_alloc(share_pool, sizeof(ngx_rpc_task_t));
     }
 
     if(task == NULL)
@@ -76,6 +75,7 @@ void ngx_http_rpc_task_destory(void *t){
     ngx_rpc_task_t *task = t;
 
 
+
     // free params
     ngx_http_rpc_task_set_bufs(task, &task->req_bufs, NULL);
     ngx_http_rpc_task_set_bufs(task, &task->res_bufs, NULL);
@@ -95,8 +95,8 @@ void ngx_http_rpc_task_set_bufs(ngx_rpc_task_t* task, ngx_chain_t* req_bufs, ngx
 {
     if(task->exec_in_nginx)
     {
-        ngx_chain_t t ={NULL, NULL};
-        *req_bufs = src_bufs ? t : *src_bufs;
+        req_bufs->buf = src_bufs ? src_bufs->buf : NULL;
+        req_bufs->next = src_bufs ? src_bufs->next : NULL;
         return;
     }
 
@@ -105,7 +105,7 @@ void ngx_http_rpc_task_set_bufs(ngx_rpc_task_t* task, ngx_chain_t* req_bufs, ngx
     if(req_bufs->buf != NULL )
     {
         ngx_slab_free(task->share_pool, req_bufs->buf->pos);
-        ngx_slab_free(task->ngx_pool, req_bufs->buf);
+        ngx_slab_free(task->share_pool, req_bufs->buf);
         req_bufs->buf = NULL;
     }
 
@@ -116,7 +116,7 @@ void ngx_http_rpc_task_set_bufs(ngx_rpc_task_t* task, ngx_chain_t* req_bufs, ngx
     {
         ngx_slab_free(task->share_pool, (*ptr)->buf->pos);
         ngx_slab_free(task->share_pool, (*ptr)->buf);
-        ngx_slab_free(pool, *ptr);
+        ngx_slab_free(task->share_pool, *ptr);
     }
 
     // clear
@@ -127,10 +127,10 @@ void ngx_http_rpc_task_set_bufs(ngx_rpc_task_t* task, ngx_chain_t* req_bufs, ngx
     {
         ngx_uint_t size = src_bufs->buf->last - src_bufs->buf->pos;
 
-        (*ptr)->buf = (ngx_buf_t*)ngx_slab_alloc(pool, sizeof(ngx_buf_t));
+        (*ptr)->buf = (ngx_buf_t*)ngx_slab_alloc(task->share_pool, sizeof(ngx_buf_t));
         memcpy((*ptr)->buf, src_bufs->buf, sizeof(ngx_buf_t));
 
-        (*ptr)->buf->pos = (*ptr)->buf->start = (u_char*) ngx_slab_alloc(pool, size);
+        (*ptr)->buf->pos = (*ptr)->buf->start = (u_char*) ngx_slab_alloc(task->share_pool, size);
         memcpy( (*ptr)->buf->pos, src_bufs->buf->pos, size);
 
         (*ptr)->buf->last =(*ptr)->buf->end = (*ptr)->buf->pos + size;
@@ -142,7 +142,7 @@ void ngx_http_rpc_task_set_bufs(ngx_rpc_task_t* task, ngx_chain_t* req_bufs, ngx
         }
 
         // new node
-        (*ptr)->next = (ngx_chain_t*)ngx_slab_alloc(pool, sizeof(ngx_chain_t));
+        (*ptr)->next = (ngx_chain_t*)ngx_slab_alloc(task->share_pool, sizeof(ngx_chain_t));
         ptr = &((*ptr)->next);
     }
 

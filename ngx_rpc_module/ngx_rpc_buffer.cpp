@@ -88,47 +88,52 @@ NgxChainBufferWriter::NgxChainBufferWriter(ngx_chain_t& ch, ngx_pool_t* p,unsign
 
 bool NgxChainBufferWriter::Next(void** data, int* size)
 {
+    // clear all las, ptr is the last
+    ngx_chain_t *ptr = chain;
+    for( ; ptr->next != NULL; ptr = ptr->next)
+    {
+        ptr->buf->last_buf = 0;
+    }
 
     // need allocate new chain
-    if(chain->buf != NULL && chain->buf->last == chain->buf->end)
+    if(ptr->buf != NULL && ptr->buf->last == ptr->buf->end)
     {
-        chain->next = (ngx_chain_t*)
+        ptr->next =  (ngx_chain_t*)
                 ngx_palloc(pool, sizeof(ngx_chain_t));
 
-        chain = chain->next;
-        chain->next = NULL;
-        chain->buf = NULL;
+        ptr = ptr->next;
+        ptr->next = NULL;
+        ptr->buf = NULL;
     }
 
     // if skiped has called
-    if(chain->buf)
+    if(ptr->buf)
     {
-        *size = chain->buf->end - chain->buf->last;
-        *data = chain->buf->last;
+        *size = ptr->buf->end - ptr->buf->last;
+        *data = ptr->buf->last;
 
-        chain->buf->pos = chain->buf->last;
-        chain->buf->last = chain->buf->end;
+        ptr->buf->pos = ptr->buf->last;
+        ptr->buf->last = ptr->buf->end;
 
     }else{
-
         // allocate new buff
         *size = default_size * extends;
         //chain->buf = ngx_create_temp_buf(pool, *size);
 
-        ngx_buf_t* b =(ngx_buf_t*)ngx_palloc(pool, sizeof(ngx_buf_t));
-        memset(b, 0, sizeof(ngx_buf_t));
-
-        b->start = (u_char*)ngx_palloc(pool, *size);
-        b->pos   = b->start;
+        ngx_buf_t* b =(ngx_buf_t*)ngx_create_temp_buf(pool, *size);
         b->last  = b->start + *size;
         b->end   = b->last;
-        b->temporary = 0;
-        b->memory    = 1;
+        b->last_buf = 1;
 
-        extends += 1;
+        b->temporary = 1;
+        b->memory    = 1;
+        b->file = NULL;
+        b->in_file = 0;
+
         *data = b->pos;
 
-        chain->buf = b;
+        ptr->buf = b;
+        extends += 1;
     }
 
     totaly += *size;
@@ -202,6 +207,7 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
 
         b->temporary = 0;
         b->memory    = 1;
+        b->in_file   = 0;
 
         *data = b->pos;
 

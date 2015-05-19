@@ -177,7 +177,9 @@ std::string GetNgxModuleHeader(const google::protobuf::FileDescriptor *file) {
     vars[PROTO_PACKAGE] = file->package();
 
     vars[PROTO_NAMESPACE] = Replace(file->package(), ".", "::");
+
     vars[PROTO_NAMEPATH]  = Replace(file->package(), ".", "/");
+    vars[PROTO_NAMEPATH_DOT]  = "/" + file->package();
 
 
     // includes

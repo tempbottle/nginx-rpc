@@ -137,6 +137,7 @@ static void ngxrpc_inspect_application_requeststatus(ngx_rpc_task_t* _this, void
 {
     ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)p1;
 
+    // release in finish_request
     RpcChannel *cntl = new RpcChannel(rpc_ctx->r);
 
     cntl->task = _this;
@@ -202,7 +203,9 @@ static char* ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_comman
     {
        inspect_conf->application_log_file = (value[2]);
        inspect_conf->application_log  = (ngx_log_t*)ngx_palloc(cf->pool, sizeof(ngx_log_t));
+       memset(inspect_conf->application_log, 0, sizeof(ngx_log_t));
        inspect_conf->application_log->file = ngx_conf_open_file(cf->cycle, &value[1]);
+
        inspect_conf->application_log->log_level = NGX_DEBUG;
     }
 
@@ -210,39 +213,42 @@ static char* ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_comman
     
     {
         method_conf_t *method = (method_conf_t *)ngx_array_push(rpc_conf->method_array);
-        method->name    = ngx_string("/ngxrpc/inspect/Application/interface");
+        method->name    = ngx_string("/ngxrpc/inspect/application/interface");
         method->_impl   = inspect_conf->application_impl;
         method->handler = ngxrpc_inspect_application_interface;
         method->log     = inspect_conf->application_log;
+        method->exec_in_nginx = 1;
     }
     
     {
         method_conf_t *method = (method_conf_t *)ngx_array_push(rpc_conf->method_array);
-        method->name    = ngx_string("/ngxrpc/inspect.Application.interface");
+        method->name    = ngx_string("/ngxrpc.inspect.application.interface");
         method->_impl   = inspect_conf->application_impl;
         method->handler = ngxrpc_inspect_application_interface;
         method->log     = inspect_conf->application_log;
+        method->exec_in_nginx = 1;
     }
-    
-    
+        
     {
         method_conf_t *method = (method_conf_t *)ngx_array_push(rpc_conf->method_array);
-        method->name    = ngx_string("/ngxrpc/inspect/Application/requeststatus");
+        method->name    = ngx_string("/ngxrpc/inspect/application/requeststatus");
         method->_impl   = inspect_conf->application_impl;
         method->handler = ngxrpc_inspect_application_requeststatus;
         method->log     = inspect_conf->application_log;
+        method->exec_in_nginx = 1;
     }
     
     {
         method_conf_t *method = (method_conf_t *)ngx_array_push(rpc_conf->method_array);
-        method->name    = ngx_string("/ngxrpc/inspect.Application.requeststatus");
+        method->name    = ngx_string("/ngxrpc.inspect.application.requeststatus");
         method->_impl   = inspect_conf->application_impl;
         method->handler = ngxrpc_inspect_application_requeststatus;
         method->log     = inspect_conf->application_log;
+        method->exec_in_nginx = 1;
     }
 
 
-     ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+     ngx_conf_log_error(NGX_LOG_INFO, cf, 0,
               "ngx_conf_set_inspect_application_hanlder with application_impl:%p, conf file:%V log_file:%V",
               inspect_conf->application_impl,
               &inspect_conf->application_conf_file,
@@ -263,6 +269,4 @@ static void ngx_inspect_process_exit(ngx_cycle_t* cycle)
 
     // release the instance 
     delete c->application_impl;
-
-
 }

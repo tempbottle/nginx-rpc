@@ -113,7 +113,7 @@ ngx_rpc_notify_t * ngx_rpc_queue_get_idle(ngx_rpc_queue_t *queue)
 
     ngx_shmtx_unlock(&queue->idles_lock);
 
-    return proc_notify_node;
+    return ngx_queue_data(proc_notify_node, ngx_rpc_notify_t, idles);
 }
 
 

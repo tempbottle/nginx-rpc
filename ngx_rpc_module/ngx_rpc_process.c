@@ -280,7 +280,7 @@ static ngx_int_t ngx_proc_rpc_process_init(ngx_cycle_t *cycle)
     conf->notify->write_hanlder = ngx_proc_rpc_process_one_cycle;
 
     ngx_log_error(NGX_LOG_WARN,cycle->log, 0,
-                  "ngx_proc_rpc_process_init, conf:%p queue:%p notify:%p fd:%p",
+                  "ngx_proc_rpc_process_init, conf:%p queue:%p notify:%p event fd:%d",
                   conf, conf->queue, conf->notify, conf->notify->event_fd);
 
     return NGX_OK;

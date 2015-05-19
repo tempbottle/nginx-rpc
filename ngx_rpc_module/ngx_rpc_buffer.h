@@ -33,7 +33,7 @@ class NgxChainBufferWriter :
         public ::google::protobuf::io::ZeroCopyOutputStream
 {
 public:
-    NgxChainBufferWriter(ngx_chain_t& ch, ngx_pool_t* p,unsigned int ex = 1);
+    NgxChainBufferWriter(ngx_chain_t& ch, ngx_pool_t* p, unsigned int ex = 1);
 
     virtual bool Next(void** data, int* size);
 
@@ -57,7 +57,7 @@ class NgxShmChainBufferWriter :
         public ::google::protobuf::io::ZeroCopyOutputStream
 {
 public:
-    NgxShmChainBufferWriter(ngx_chain_t& ch, ngx_slab_pool_t *p,unsigned int ex = 1);
+    NgxShmChainBufferWriter(ngx_chain_t& ch, ngx_slab_pool_t *p, unsigned int ex = 1);
 
     virtual bool Next(void** data, int* size);
 

@@ -50,7 +50,7 @@ static const char* NGX_RPC_SERVER_METHOD[]={
     "     void $PROTO_SERVER_METHOD_NAME$(RpcChannel *channel,const $PROTO_SERVER_METHOD_REQUEST_NAME$* request,",
     "                                     $PROTO_SERVER_METHOD_RESPONSE_NAME$* response, RpcCallHandler done)",
     "    {",
-    "         DEBUG(\"$PROTO_SERVER_METHOD_NAME$ was called!\")",
+    "         DEBUG(\"$PROTO_SERVER_METHOD_NAME$ was called!\");",
     "",
     "         //finish this method",
     "         done(channel,request,response,NGX_HTTP_OK);",

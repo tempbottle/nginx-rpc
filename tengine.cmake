@@ -61,7 +61,8 @@ add_custom_target(proto_src SOURCES ${SRC_C})
 #GIT_REPOSITORY https://github.com/alibaba/tengine.git
 SET(TENGINX_PATH ${CMAKE_SOURCE_DIR}/thirdparty/tengine)
 SET(TENGINX_SRC ${CMAKE_SOURCE_DIR}/build/tengine-src)
-SET(TENGINX_INSTALL ${CMAKE_SOURCE_DIR}/install)
+SET(TENGINX_INSTALL ${CMAKE_INSTALL_PREFIX})
+SET(TENGINX_SRC_SOURCES "")
 
 SET(CONFIGURE_COMMAND CC=gcc ./configure --prefix=${TENGINX_INSTALL}
 --with-debug
@@ -73,6 +74,7 @@ SET(CONFIGURE_COMMAND CC=gcc ./configure --prefix=${TENGINX_INSTALL}
 --with-http_lua_module
 --with-luajit-inc=${LUAJIT2}/include/luajit-2.0
 --with-luajit-lib=${LUAJIT2}/lib)
+
 
 #add module
 foreach(module ${NGX_MODULE})
@@ -89,6 +91,7 @@ include_directories("${TENGINX_SRC}/src/os")
 include_directories("${TENGINX_SRC}/src/proc")
 
 
+
 foreach(module ${NGX_MODULE})
     SET(CONFIGURE_COMMAND ${CONFIGURE_COMMAND} --add-module=${module})
     #add to qtcreator
@@ -102,6 +105,8 @@ foreach(module ${NGX_MODULE})
     add_custom_target(${MODULE_NAME}_src SOURCES ${SRC_PP} ${SRC_CC} ${SRC_C} ${HEADERS} ${SRC_CONFIG})
     #message("add add_custom_target:${MODULE_NAME} from with ${SRC_PP} ${SRC_CC} ${SRC_C} ${HEADERS}")
     #add_dependencies(tengine_build ${MODULE_NAME})
+    SET(TENGINX_SRC_SOURCES ${TENGINX_SRC_SOURCES} ${SRC_PP} ${SRC_CC} ${SRC_C} ${HEADERS} ${SRC_CONFIG})
+
 endforeach()
 
 
@@ -118,6 +123,15 @@ externalproject_add(tengine_build
     BUILD_IN_SOURCE 1
     INSTALL_DIR ${TENGINX_INSTALL}
 )
+
+#rebuild the nginx when some file change
+add_custom_target(tengine_rebuild ALL
+                  COMMAND make install
+                  DEPENDS tengine_build
+                  WORKING_DIRECTORY ${TENGINX_SRC}
+                  SOURCES ${TENGINX_SRC_SOURCES})
+
+
 
 include_directories(${module})
 #add to qtcreator

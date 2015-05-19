@@ -53,16 +53,14 @@ public:
                      ::google::protobuf::Message* res,
                      RpcCallHandler done);
 
-
-private:
-
-    static void upstream_done(ngx_rpc_task_t* task, void *ctx);
-    static void subrequest_done(ngx_rpc_task_t* task, void *ctx);
-
     static void finish_request(RpcChannel *channel,
                                const ::google::protobuf::Message* req,
                                ::google::protobuf::Message* res,
                                int result);
+private:
+
+    static void upstream_done(ngx_rpc_task_t* task, void *ctx);
+    static void subrequest_done(ngx_rpc_task_t* task, void *ctx);
 
 
 public:
@@ -73,10 +71,7 @@ public:
     ::google::protobuf::Message *res;
     RpcCallHandler  done;
 
-
-
     RpcChannel* pre_cntl;
-
 };
 
 
