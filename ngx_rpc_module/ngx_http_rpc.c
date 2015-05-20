@@ -396,10 +396,7 @@ static void ngx_http_rpc_post_async_handler(ngx_http_request_t *r)
                                                  r->connection->log,
                                                  rpc_ctx->method->exec_in_nginx);
     }else{
-        rpc_ctx->task = ngx_http_rpc_task_reset(rpc_ctx->task,
-                                                rpc_ctx->pool,
-                                                r->connection->pool,
-                                                r->connection->log);
+        rpc_ctx->task = ngx_http_rpc_task_reset(rpc_ctx->task);
     }
 
     // this process eventfd

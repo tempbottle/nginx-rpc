@@ -64,7 +64,7 @@ struct ngx_rpc_task_s {
 
     // output
     ngx_chain_t res_bufs;
-    ngx_int_t  res_length;
+    ngx_int_t   res_length;
 
     // task ret
     int response_states;
@@ -90,7 +90,7 @@ ngx_rpc_task_t *ngx_http_create_rpc_task(ngx_slab_pool_t *share_pool,
 /// \param log
 /// \return
 ///
-ngx_rpc_task_t* ngx_http_rpc_task_reset(ngx_rpc_task_t *task, ngx_slab_pool_t *pool, ngx_pool_t* ngx_pool, ngx_log_t *log);
+ngx_rpc_task_t* ngx_http_rpc_task_reset(ngx_rpc_task_t *task);
 
 
 ////

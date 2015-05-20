@@ -31,53 +31,66 @@ void RpcChannel::upstream(const std::string& upstream_path,
     rpc_call_channel->res  = res;
     rpc_call_channel->done = done;
 
-    // only one upstream can do in same time
-    rpc_call_channel->task = this->task;
+    // only one upstream can do in same time ,so reuse this task
+    rpc_call_channel->task = task;
+
+    ngx_http_rpc_task_set_bufs(task, &task->req_bufs, NULL);
+    task->req_length = 0;
+
+    ngx_http_rpc_task_set_bufs(task, &task->res_bufs, NULL);
+    task->res_length = 0;
+
 
     if(task->exec_in_nginx)
     {
-        NgxChainBufferWriter  writer(task->req_bufs,   task->ngx_pool);
+        NgxChainBufferWriter  writer(rpc_call_channel->task->req_bufs, rpc_call_channel->task->ngx_pool);
         req->SerializeToZeroCopyStream(&writer);
-        task->req_length = writer.totaly;
+        rpc_call_channel->task->req_length = writer.totaly;
     }else{
-        NgxShmChainBufferWriter  writer(task->req_bufs, task->share_pool);
+        NgxShmChainBufferWriter  writer(rpc_call_channel->task->req_bufs, rpc_call_channel->task->share_pool);
         req->SerializeToZeroCopyStream(&writer);
-        task->req_length = writer.totaly;
+        rpc_call_channel->task->req_length = writer.totaly;
     }
 
-    task->finish.handler = ngx_http_rpc_start_upsteam;
-    task->finish.p1      = this->r;
+    rpc_call_channel->task->finish.handler = ngx_http_rpc_start_upsteam;
+    rpc_call_channel->task->finish.p1      = this->r;
 
-    task->closure.handler = RpcChannel::upstream_done;
-    task->closure.p1      = rpc_call_channel;
+    rpc_call_channel->task->closure.handler = RpcChannel::upstream_done;
+    rpc_call_channel->task->closure.p1      = rpc_call_channel;
 
-    strncpy((char*)task->path, upstream_path.c_str(), upstream_path.size());
+    strncpy((char*)rpc_call_channel->task->path, upstream_path.c_str(), upstream_path.size());
 
-    if(this->task->exec_in_nginx)
+    if(rpc_call_channel->task->exec_in_nginx)
     {
-        task->finish.handler(task, task->finish.p1);
+        rpc_call_channel->task->finish.handler(rpc_call_channel->task,
+                                               rpc_call_channel->task->finish.p1);
     }else{
-        ngx_rpc_notify_push_task(task->done_notify, &task->node);
+        ngx_rpc_notify_push_task(rpc_call_channel->task->done_notify,
+                                 &rpc_call_channel->task->node);
     }
 }
 
  void RpcChannel::upstream_done(ngx_rpc_task_t* task, void *ctx)
 {
-    task->exec_upstream = 0;
-    RpcChannel *new_channel = (RpcChannel *)ctx;
 
-    NgxChainBufferReader reader(task->res_bufs);
+    RpcChannel *new_channel = (RpcChannel *)ctx;
+    new_channel->task->exec_upstream = 0;
+
+    NgxChainBufferReader reader(new_channel->task->res_bufs);
     bool ret = false;
 
-    if( task->response_states == NGX_HTTP_OK)
+    if(new_channel->task->response_states == NGX_HTTP_OK)
     {
         ret = new_channel->res->ParseFromZeroCopyStream(&reader);
     }
 
-    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, " upstream_done task:%p, status:%d length:%d parse:%d", task, task->response_states, task->res_length, ret);
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
+                  " upstream_done task:%p, status:%d length:%d parse:%d",
+                  new_channel->task, new_channel->task->response_states,
+                  new_channel->task->res_length, ret);
 
     new_channel->done(new_channel->pre_cntl, new_channel->req,
-                      new_channel->res, task->response_states);
+                      new_channel->res, new_channel->task->response_states);
 
     delete new_channel;
 
@@ -106,35 +119,45 @@ void RpcChannel::subrequest(const std::string& path,
     new_channel->req = (::google::protobuf::Message*)req;
     new_channel->res = res;
     new_channel->done = done;
+
+    new_channel->task = task;
+
+    ngx_http_rpc_task_set_bufs(task, &task->req_bufs, NULL);
+    task->req_length = 0;
+
+    ngx_http_rpc_task_set_bufs(task, &task->res_bufs, NULL);
+    task->res_length = 0;
+
     bool ret = false;
-    if(task->exec_in_nginx)
+    if(new_channel->task->exec_in_nginx)
     {
-        NgxChainBufferWriter  writer(task->req_bufs, task->ngx_pool);
+        NgxChainBufferWriter  writer(new_channel->task->req_bufs, new_channel->task->ngx_pool);
         ret = req->SerializeToZeroCopyStream(&writer);
-        task->req_length = writer.totaly;
+        new_channel->task->req_length = writer.totaly;
 
     }else{
 
-        NgxShmChainBufferWriter  writer(task->req_bufs, task->share_pool);
+        NgxShmChainBufferWriter  writer(new_channel->task->req_bufs, new_channel->task->share_pool);
         ret = req->SerializeToZeroCopyStream(&writer);
-        task->req_length = writer.totaly;
+        new_channel->task->req_length = writer.totaly;
     }
 
     // reuse this task
-    task->finish.handler = ngx_http_rpc_request_foward;
-    task->finish.p1 = r;
+    new_channel->task->finish.handler = ngx_http_rpc_request_foward;
+    new_channel->task->finish.p1 = r;
 
-    task->closure.handler = RpcChannel::subrequest_done;
-    task->closure.p1      = new_channel;
+    new_channel->task->closure.handler = RpcChannel::subrequest_done;
+    new_channel->task->closure.p1      = new_channel;
 
-    strncpy((char*)task->path, path.c_str(), path.size());
+    strncpy((char*)new_channel->task->path, path.c_str(), path.size());
 
-    if(task->done_notify != NULL)
-         ngx_rpc_notify_push_task(task->done_notify, &task->node);
+    if(new_channel->task->done_notify != NULL)
+         ngx_rpc_notify_push_task(new_channel->task->done_notify,
+                                  &new_channel->task->node);
 
     ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0,
                   "forward_request SerializeToZeroCopyStream:%d res_length:%d nofity:%p path:%s",
-                  ret, task->res_length, task->done_notify, task->path);
+                  ret, new_channel->task->res_length, new_channel->task->done_notify, new_channel->task->path);
 
 }
 
@@ -148,12 +171,13 @@ void RpcChannel::subrequest_done(ngx_rpc_task_t* task, void *ctx)
     NgxChainBufferReader reader(task->res_bufs);
     bool ret = false;
 
-    if( task->response_states == NGX_HTTP_OK)
+
+    if(new_channel->task->response_states == NGX_HTTP_OK)
     {
         ret = new_channel->res->ParseFromZeroCopyStream(&reader);
     }
 
-    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, " subrequest_done task:%p, status:%d length:%d parse:%d", task, task->response_states, task->res_length, ret);
+    ngx_log_error(NGX_LOG_INFO, ngx_cycle->log, 0, " subrequest_done task:%p, status:%d length:%d parse:%d", new_channel->task, new_channel->task->response_states, new_channel->task->res_length, ret);
 
     new_channel->done(new_channel->pre_cntl, new_channel->req,
                       new_channel->res, task->response_states);
@@ -168,13 +192,16 @@ void RpcChannel::finish_request(RpcChannel *channel, const google::protobuf::Mes
     ngx_rpc_task_t *task = channel->task;
     task->response_states = result;
 
-
     if(task->response_states == NGX_HTTP_OK)
     {
         bool ret = false;
+
+        ngx_http_rpc_task_set_bufs(task, &task->res_bufs, NULL);
+        task->res_length = 0;
+
         if(task->exec_in_nginx)
         {
-            NgxChainBufferWriter  writer(task->res_bufs, task->ngx_pool);
+            NgxChainBufferWriter writer(task->res_bufs, task->ngx_pool);
             ret = res->SerializeToZeroCopyStream(&writer);
             task->res_length = writer.totaly;
 

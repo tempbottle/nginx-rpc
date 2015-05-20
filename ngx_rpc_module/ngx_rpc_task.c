@@ -45,24 +45,21 @@ ngx_rpc_task_t* ngx_http_create_rpc_task(ngx_slab_pool_t *share_pool,
 
 
 
-ngx_rpc_task_t* ngx_http_rpc_task_reset(ngx_rpc_task_t *task, ngx_slab_pool_t *share_pool, ngx_pool_t *ngx_pool, ngx_log_t *log){
+ngx_rpc_task_t* ngx_http_rpc_task_reset(ngx_rpc_task_t *task){
 
     ngx_http_rpc_task_set_bufs(task, &task->req_bufs, NULL);
+    task->req_length = 0;
+
     ngx_http_rpc_task_set_bufs(task, &task->res_bufs, NULL);
+    task->res_length = 0;
 
-    int exec_in_nginx = task->exec_in_nginx;
-
-    memset(task, 0, sizeof(ngx_rpc_task_t));
-
-    task->log           = log;
-    task->share_pool    = share_pool;
-    task->ngx_pool      = ngx_pool;
-    task->exec_in_nginx = exec_in_nginx;
+    task->response_states = 0;
 
     ngx_queue_init(&task->node);
 
-    ngx_log_error(NGX_LOG_DEBUG, log, 0, " ngx_http_rpc_task_reset task:%p with node:%p",
-                                          task, &task->node);
+    ngx_log_error(NGX_LOG_DEBUG, task->log, 0,
+                  " ngx_http_rpc_task_reset task:%p with node:%p",
+                  task, &task->node);
 
     return task;
 }
@@ -148,7 +145,6 @@ void ngx_http_rpc_task_set_bufs(ngx_rpc_task_t* task, ngx_chain_t* req_bufs, ngx
         }else{
             chain->next = NULL;
         }
-
     }
 
 }

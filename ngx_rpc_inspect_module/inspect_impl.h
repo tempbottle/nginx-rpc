@@ -27,7 +27,6 @@ public:
     {
          DEBUG("interface was called!");
 
-         response->set_json("123456");
          //finish this method
          done(channel,request,response,NGX_HTTP_OK);
     }
@@ -39,39 +38,10 @@ public:
     {
          DEBUG("requeststatus was called!");
 
-         RpcCallHandler updone_done = std::bind(&Application_server::requeststatus_forward_done, this,
-                                                 channel, request, response,
-                                                 std::placeholders::_1,
-                                                 std::placeholders::_2,
-                                                 std::placeholders::_3,
-                                                 std::placeholders::_4);
-
-         Request*  up_req = new Request();
-         Response* up_res = new Response();
-
-         up_req->CopyFrom(*request);
-
-         channel->upstream("/ngxrpc/inspect/Application/interface", up_req, up_res, updone_done);
+         //finish this method
+         done(channel,request,response,NGX_HTTP_OK);
     }
 
-     void requeststatus_forward_done(RpcChannel *  orgin_channel,
-                                     const  ::ngxrpc::inspect::Request * orgin_request,
-                                     ::ngxrpc::inspect::Response* orgin_response,
-
-                                     RpcChannel *new_channel,
-                                     const ::google::protobuf::Message* new_request,
-                                     ::google::protobuf::Message* new_response,
-                                     int new_status)
-     {
-
-         ::ngxrpc::inspect::Response * sub_response =  (::ngxrpc::inspect::Response *) new_response;
-
-         orgin_response->set_json(sub_response->json() + "hehe");
-
-         DEBUG("requeststatus_forward_done orgin_response:"<<orgin_response->json()<<", new_status:"<<new_status);
-
-         orgin_channel->done(orgin_channel, orgin_request, orgin_response, new_status);
-     }
 
 
 }; /// for class Application_server
