@@ -217,7 +217,7 @@ static char* ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_comman
         method->_impl   = inspect_conf->application_impl;
         method->handler = ngxrpc_inspect_application_interface;
         method->log     = inspect_conf->application_log;
-        method->exec_in_nginx = 1;
+        method->exec_in_nginx = 0;
     }
     
     {
@@ -226,7 +226,7 @@ static char* ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_comman
         method->_impl   = inspect_conf->application_impl;
         method->handler = ngxrpc_inspect_application_interface;
         method->log     = inspect_conf->application_log;
-        method->exec_in_nginx = 1;
+        method->exec_in_nginx = 0;
     }
         
     {
@@ -235,7 +235,7 @@ static char* ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_comman
         method->_impl   = inspect_conf->application_impl;
         method->handler = ngxrpc_inspect_application_requeststatus;
         method->log     = inspect_conf->application_log;
-        method->exec_in_nginx = 1;
+        method->exec_in_nginx = 0;
     }
     
     {
@@ -244,7 +244,7 @@ static char* ngx_conf_set_inspect_application_hanlder(ngx_conf_t *cf, ngx_comman
         method->_impl   = inspect_conf->application_impl;
         method->handler = ngxrpc_inspect_application_requeststatus;
         method->log     = inspect_conf->application_log;
-        method->exec_in_nginx = 1;
+        method->exec_in_nginx = 0;
     }
 
 

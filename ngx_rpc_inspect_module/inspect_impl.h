@@ -65,10 +65,12 @@ public:
      {
 
          ::ngxrpc::inspect::Response * sub_response =  (::ngxrpc::inspect::Response *) new_response;
-         orgin_response->set_json(sub_response->json());
 
-         DEBUG("requeststatus_forward_done orgin_response:"<<orgin_response->json());
-         orgin_channel->done(orgin_channel, new_request, new_response, new_status);
+         orgin_response->set_json(sub_response->json() + "hehe");
+
+         DEBUG("requeststatus_forward_done orgin_response:"<<orgin_response->json()<<", new_status:"<<new_status);
+
+         orgin_channel->done(orgin_channel, orgin_request, orgin_response, new_status);
      }
 
 

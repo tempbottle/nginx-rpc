@@ -20,7 +20,7 @@ if __name__ == '__main__':
     url = "http://10.25.66.77:8082/ngxrpc/inspect/application/requeststatus"
     #url = "http://10.25.66.77:8082/ngxrpc/inspect/application/interface"
     reqpb = Request()
-    reqpb.json = "hehe2"
+    reqpb.json = "dasfgsgsdfsdfhehe2"
     data = reqpb.SerializeToString()
 
     opener = urllib2.build_opener()

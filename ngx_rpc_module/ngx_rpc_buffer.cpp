@@ -165,7 +165,7 @@ NgxShmChainBufferWriter::NgxShmChainBufferWriter(ngx_chain_t& ch, ngx_slab_pool_
 bool NgxShmChainBufferWriter::Next(void** data, int* size)
 {
 
-    // clear all las, ptr is the last
+    // clear all last, ptr is the last
     ngx_chain_t *ptr = chain;
     for( ; ptr->next != NULL; ptr = ptr->next)
     {
@@ -177,6 +177,8 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
     {
         ptr->next = (ngx_chain_t*)
                 ngx_slab_alloc(pool, sizeof(ngx_chain_t));
+
+        ptr->buf->last_buf = 0;
 
         ptr = ptr->next;
         ptr->next = NULL;
@@ -197,11 +199,11 @@ bool NgxShmChainBufferWriter::Next(void** data, int* size)
         *size = default_size * extends;
         //chain->buf = ngx_create_temp_buf(pool, *size);
 
-        ngx_buf_t* b =(ngx_buf_t*)ngx_slab_alloc(pool, sizeof(ngx_buf_t));
+        ngx_buf_t* b =(ngx_buf_t*)ngx_slab_alloc(pool, sizeof(ngx_buf_t) + *size);
 
-        b->start = (u_char*)ngx_slab_alloc(pool, *size);
+        b->start = ((u_char*)b) + sizeof(ngx_buf_t);
         b->pos   = b->start;
-        b->last = b->start + *size;
+        b->last  = b->start + *size;
         b->end   = b->last;
         b->last_buf = 1;
 

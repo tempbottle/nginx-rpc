@@ -10,7 +10,7 @@ void ngx_http_rpc_ctx_destroy(void *p)
 
     if(!ctx_ptr->method->exec_in_nginx)
     {
-      ngx_slab_free(ctx_ptr->pool, p);
+        ngx_slab_free(ctx_ptr->pool, p);
     }
 
     ngx_log_error(NGX_LOG_DEBUG, ctx_ptr->method->log, 0,
@@ -408,6 +408,7 @@ static void ngx_http_rpc_post_async_handler(ngx_http_request_t *r)
 
     // copy the request bufs
     ngx_http_rpc_task_set_bufs(rpc_ctx->task, &rpc_ctx->task->req_bufs, r->request_body->bufs);
+
     rpc_ctx->task->req_length = r->headers_in.content_length_n;
 
     // processor which run in the proc process.
@@ -579,10 +580,11 @@ void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx)
     if(task->response_states != NGX_HTTP_OK)
     {
         ngx_log_error(NGX_LOG_ERR, task->log, 0,
-                      "ngx_http_inspect_application_finish task:%p status:%d size:%d",
+                      "ngx_http_rpc_request_finish task:%p status:%d size:%d",
                       task, task->response_states, task->res_length );
 
-        r->header_only = 1;
+        //r->header_sent = 0;
+        //r->header_only = 1;
         ngx_http_finalize_request(r, task->response_states);
         return;
     }
@@ -602,10 +604,10 @@ void ngx_http_rpc_request_finish(ngx_rpc_task_t* _this, void *ctx)
     }
 
     ngx_log_error(NGX_LOG_INFO, task->log, 0,
-                  "ngx_http_inspect_application_finish task:%p status:%d size:%d, rc:%d",
+                  "ngx_http_rpc_request_finish task:%p status:%d size:%d, rc:%d",
                   task, task->response_states, task->res_length, rc );
 
-    ngx_http_finalize_request(r, rc);
+    ngx_http_finalize_request(r, task->response_states);
 }
 
 
@@ -748,9 +750,14 @@ static ngx_int_t ngx_http_rpc_upstream_create_request(ngx_http_request_t *r)
     r->upstream->header_sent = 0;
     r->header_hash = 1;
 
+    // clear first
+    memset(&rpc_ctx->status, 0, sizeof(rpc_ctx->status));
+
     ngx_log_debug(NGX_LOG_DEBUG_ALL, r->connection->log, 0,
                   "ngx_http_rpc_upstream_create_request with task:%p body_size:%d",
                   rpc_ctx->task, rpc_ctx->task->req_length);
+
+
 
     return NGX_OK;
 }
@@ -764,6 +771,9 @@ static ngx_int_t ngx_http_rpc_upstream_reinit_request(ngx_http_request_t *r)
     ngx_log_debug(NGX_LOG_DEBUG_ALL, r->connection->log,
                   0, "ngx_http_rpc_upstream_reinit_request with task:%p body_size:%d",
                   rpc_ctx->task, rpc_ctx->task->req_length);
+
+    // clear first
+    memset(&rpc_ctx->status, 0, sizeof(rpc_ctx->status));
 
     return NGX_OK;
 }
@@ -779,7 +789,6 @@ static ngx_int_t ngx_http_rpc_upstream_process_header(ngx_http_request_t *r)
 
     ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
             ngx_http_get_module_ctx(r, ngx_http_rpc_module);
-
 
 
     ngx_log_debug(NGX_LOG_DEBUG_ALL, r->connection->log,
@@ -833,9 +842,9 @@ static ngx_int_t ngx_http_rpc_upstream_process_header(ngx_http_request_t *r)
             header = ngx_hash_find(&umcf->headers_in_hash, h->hash, h->lowcase_key, h->key.len);
 
 
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "ngx_http_parse_header_line :rc:%d, lowcase_key:%s key:%V value:%V header name:%V"
-                          , rc , h->lowcase_key, &h->key, &h->value, &header->name);
+            //ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            //              "ngx_http_parse_header_line :rc:%d, lowcase_key:%s key:%V value:%V header name:%V"
+            //              , rc , h->lowcase_key, &h->key, &h->value, &header->name);
 
             /**set the header correspond member in the r */
 
@@ -966,8 +975,6 @@ static void  ngx_http_rpc_upstream_finalize_request(ngx_http_request_t *r,
 
     rpc_ctx->task->response_states  = rpc_ctx->status.code;
 
-
-
     ngx_log_debug(NGX_LOG_DEBUG_ALL, r->connection->log, 0,
                   "ngx_http_rpc_upstream_finalize_request with task:%p body_size:%d rc:%d status:%d",
                   rpc_ctx->task, rpc_ctx->task->res_length, rc, rpc_ctx->status.code);
@@ -988,11 +995,21 @@ static ngx_int_t ngx_http_rpc_upstream_input_filter_init(void *data)
     ngx_http_rpc_ctx_t *rpc_ctx = (ngx_http_rpc_ctx_t *)
             ngx_http_get_module_ctx(r, ngx_http_rpc_module);
 
-    ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0, "ngx_http_rpc_upstream_input_filter_init");
+    ngx_http_upstream_t  *u = r->upstream;
 
 
     rpc_ctx->task->res_length = 0;
+    rpc_ctx->task->response_states =u->headers_in.status_n;
     ngx_http_rpc_task_set_bufs(rpc_ctx->task, &rpc_ctx->task->res_bufs, NULL);
+
+
+
+    u->length = u->headers_in.status_n == NGX_HTTP_OK ?
+                   u->headers_in.content_length_n : 0;
+
+    ngx_log_error(NGX_LOG_DEBUG, r->connection->log, 0,
+                  "ngx_http_rpc_upstream_input_filter_init response_states:%d content_length_n:%d",
+                  rpc_ctx->task->response_states, u->headers_in.content_length_n);
 
     return NGX_OK;
 }
@@ -1019,41 +1036,48 @@ static ngx_int_t ngx_http_rpc_upstream_non_buffered_copy_filter(void *data, ssiz
         return NGX_OK;
     }
 
-    for (cl = &task->res_bufs, ll = &(task->res_bufs.next); cl->buf ; cl = cl->next)
+    for (cl = &task->res_bufs, ll = &(task->res_bufs.next); cl && cl->buf ; cl = cl->next)
     {
         cl->buf->last_buf = 0;
         ll = &cl->next;
     }
 
+    //
     if(task->exec_in_nginx)
     {
+        if(cl == NULL)
+        {
+            *ll = ngx_palloc(r->pool, sizeof(ngx_chain_t));
+            (*ll)->next = NULL;
+             cl = *ll;
+        }
+
         cl->buf = ngx_create_temp_buf(r->pool, bytes);
+        cl->buf->last = cl->buf->pos + bytes;
         cl->buf->last_buf = 1;
 
-        *ll = ngx_palloc(r->pool, sizeof(ngx_chain_t));
-        (*ll)->buf  = NULL;
-        (*ll)->next = NULL;
     }else{
 
-        cl->buf = ngx_slab_alloc(task->share_pool, sizeof(ngx_buf_t));
+        if(cl == NULL)
+        {
+            *ll = ngx_slab_alloc(task->share_pool, sizeof(ngx_chain_t));
+            (*ll)->next = NULL;
+             cl = *ll;
+        }
 
-        cl->buf->start = cl->buf->pos = ngx_slab_alloc(task->share_pool, bytes);
+        cl->buf = ngx_slab_alloc(task->share_pool, sizeof(ngx_buf_t) + bytes);
+
+        cl->buf->start = cl->buf->pos = ((u_char*)cl->buf) + sizeof(ngx_buf_t);
         cl->buf->end   = cl->buf->last = cl->buf->pos + bytes;
 
         cl->buf->temporary = 1;
         cl->buf->memory    = 1;
         cl->buf->file      = 0;
         cl->buf->last_buf  = 1;
-
-        *ll = ngx_slab_alloc(task->share_pool, sizeof(ngx_chain_t));
-        (*ll)->buf  = NULL;
-        (*ll)->next = NULL;
     }
 
     memcpy(cl->buf->pos , b->pos, bytes);
     b->last += bytes;
-
-
 
     task->res_length += bytes;
 
@@ -1164,7 +1188,9 @@ void ngx_http_rpc_start_upsteam(ngx_rpc_task_t* _this, void *ctx){
                   _this, _this->path, &(u->conf->upstream->host), u->conf->upstream->port);
 
     r->main->count++;
-    // start upstream
+
+    // start upstream and not forward to client
+    r->subrequest_in_memory = 1;
     ngx_http_upstream_init(r);
 }
 

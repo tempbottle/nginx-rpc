@@ -54,10 +54,12 @@ static void ngx_rpc_notify_read_handler(ngx_event_t *ev){
         ret = read(notify->event_fd, (char*)&signal, sizeof(signal));
 
         ngx_log_debug(NGX_LOG_DEBUG_ALL, ev->log, 0,
-                      "ngx_rpc_notify_read_handler notify:%p eventfd:%d signal:%d ,ret:%d",
+                      "ngx_rpc_notify_read_handler notify:%p eventfd:%d signal:%d ,ret:%d ",
                       notify, notify->event_fd, signal, ret);
 
-        notify->read_hanlder(notify->ctx);
+        // if not read the signal, there is no task between last and this read.
+       if(ret >= 0)
+            notify->read_hanlder(notify->ctx);
 
     }while(ret > 0);
 }
